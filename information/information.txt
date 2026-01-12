@@ -1,0 +1,108 @@
+3. Información (In)
+Mide los conocimientos generales del usuario sobre diversos temas.
+• Implementación Online:
+    ◦ TTS: Realiza preguntas directas de cultura general.
+    ◦ Lógica de Inicio: Comienza en el ítem 3.
+    ◦ Suspensión: Se detiene tras 3 ceros consecutivos.
+    ◦ Puntuación: A diferencia de las anteriores, la mayoría de los ítems se califican de forma binaria: 0 o 1 punto.
+    ◦ Uso del LLM: Debe validar si el dato proporcionado es correcto según la clave de respuestas. Si la respuesta es incompleta (marcada con asterisco * o (P) en el manual), el TTS debe solicitar precisión.
+
+    a subprueba de Información (In) es uno de los componentes centrales del Índice de Comprensión Verbal y tiene como objetivo evaluar el conocimiento general que el evaluado ha adquirido de su entorno. Esta prueba consiste en una serie de preguntas que cubren un amplio rango de temas académicos, históricos y culturales.
+A continuación, presento los 26 ítems exactos que conforman la subprueba, junto con las directrices críticas para su administración en tu plataforma online:
+Lista de Ítems de Información (1 al 26)
+1. ¿Qué día viene después del lunes?
+2. ¿Cuál es la forma de la mayoría de las pelotas?
+3. ¿Para qué se usa un termómetro? (Ítem de inicio y de aprendizaje).
+4. ¿Cuántos segundos hay en un minuto? (Ítem de aprendizaje).
+5. ¿Quién fue J.F. Kennedy?
+6. ¿Qué línea imaginaria divide la Tierra en mitad norte y sur?
+7. ¿De qué está hecha el agua?
+8. ¿Cuál es la capital de Italia?
+9. ¿Quién fue Cleopatra?
+10. ¿En qué continente está India?
+11. ¿Quién fue el líder de la Revolución Cubana?
+12. ¿En qué continente está el Desierto del Sahara?
+13. ¿A qué temperatura hierve el agua?
+14. ¿En qué país se realizaron los primeros Juegos Olímpicos?
+15. ¿Quién escribió Don Quijote de la Mancha?
+16. ¿Qué nombre se asocia con la teoría de la relatividad?
+17. ¿Quién fue Mahatma Gandhi?
+18. ¿Quién creó a Condorito?
+19. ¿Quién fue Francisco Franco?
+20. ¿Por qué flota el hielo?
+21. ¿Cuál es el idioma más hablado en el mundo?
+22. ¿Quién fue Ícaro?
+23. ¿Cuál es el órgano más grande del cuerpo humano?
+24. ¿Por qué es famosa Rigoberta Menchú?
+25. ¿Cuántos minutos se demora la luz solar en llegar a la Tierra?
+26. ¿Quién escribió Alicia en el País de las Maravillas?
+
+--------------------------------------------------------------------------------
+Reglas Técnicas para el Sistema de Proctoreo Online
+Para que la simulación sea fiel al manual, el algoritmo de tu página debe contemplar lo siguiente:
+• Punto de Inicio: La administración para adultos (16-90 años) comienza siempre en el ítem 3.
+• Secuencia Inversa: Si el evaluado obtiene 0 puntos en el ítem 3 o en el ítem 4, el sistema debe administrar automáticamente los ítems 1 y 2 en orden inverso hasta obtener dos puntajes perfectos consecutivos.
+• Criterio de Suspensión: La subprueba se detiene después de que el usuario cometa 3 errores consecutivos (puntajes de 0).
+• Lógica de Consulta (P): Varios ítems (marcados con un asterisco en el manual) requieren que el examinador pida más detalles si la respuesta es vaga. Por ejemplo, en el ítem 10, si el usuario dice "en el continente más grande", el sistema debe preguntar: "Sí, ¿pero cómo se llama?".
+• Ítems de Aprendizaje (3 y 4): Si el usuario falla en estos ítems, el sistema debe proporcionar la respuesta correcta mediante el TTS para asegurar que comprenda la dinámica de la tarea.
+• Puntuación: La mayoría de estos ítems se califican de forma binaria: 0 o 1 punto. El puntaje bruto máximo es de 26 puntos.
+Resumen de Calificación para el LLM
+A diferencia de Analogías o Vocabulario, Información es más directa. El LLM solo debe validar si el dato fáctico es correcto. Si el usuario da múltiples respuestas, se debe considerar la de mejor puntaje, a menos que una de las respuestas malogre la correcta (por ejemplo, si da una información que contradice el hecho solicitado).
+Analogía para la implementación: La subprueba de Información funciona como una biblioteca de consulta rápida. El sistema le pide al usuario que "saque un libro específico del estante" (el dato). Si el usuario saca el libro correcto, gana el punto; si saca un libro parecido pero no el exacto, el bibliotecario (tu sistema) le pide que sea más específico antes de rendirse y cerrar la búsqueda.
+
+A continuación, presento los baremos exactos para la subprueba de Información (In) del WAIS-IV, adaptados de la Tabla A.1 del manual de administración y corrección (estandarización chilena),. El puntaje bruto máximo para esta subprueba es de 26 puntos.
+Al igual que en las subpruebas anteriores, los baremos permiten convertir el Puntaje Bruto (PB) en un Puntaje Equivalente (PE) escalado de 1 a 19 puntos, según el grupo de edad del evaluado,.
+Conversión por Grupo Etario (Tabla A.1)
+1. Grupo 16:0 a 17:11 años
+• PE 1-5: (1: -), (2: 0), (3: 1), (4: 2), (5: 3).
+• PE 6-10: (6: 4-5), (7: 6-7), (8: 8-9), (9: 10), (10: 11-12).
+• PE 11-15: (11: 13-14), (12: 15-16), (13: 17-18), (14: 19-20), (15: 21-22),.
+• PE 16-19: (16: 23), (17: 24), (18: 25), (19: 26).
+2. Grupo 18:0 a 19:11 años
+• PE 1-5: (1: -), (2: 0), (3: 1), (4: 2), (5: 3-4).
+• PE 6-10: (6: 5), (7: 6-7), (8: 8-9), (9: 10-11), (10: 12-13).
+• PE 11-15: (11: 14-15), (12: 16-17), (13: 18-19), (14: 20-21), (15: 22-23),.
+• PE 16-19: (16: 24), (17: 25), (18: -), (19: 26).
+3. Grupo 20:0 a 24:11 años (Grupo de Referencia)
+• PE 1-5: (1: 0), (2: 1), (3: 2), (4: 3), (5: 4-5).
+• PE 6-10: (6: 6), (7: 7-8), (8: 9-10), (9: 11-12), (10: 13-14),.
+• PE 11-15: (11: 15-16), (12: 17-18), (13: 19-20), (14: 21-22), (15: 23).
+• PE 16-19: (16: 24), (17: 25), (18: -), (19: 26).
+4. Grupo 25:0 a 29:11 años
+• PE 1-5: (1: 0), (2: 1), (3: 2), (4: 3), (5: 4-5).
+• PE 6-10: (6: 6), (7: 7-8), (8: 9-10), (9: 11-12), (10: 13-14).
+• PE 11-15: (11: 15-16), (12: 17-18), (13: 19-20), (14: 21-22), (15: 23),.
+• PE 16-19: (16: 24), (17: 25), (18: -), (19: 26).
+5. Grupos 30:0 a 34:11 y 35:0 a 44:11 años
+• PE 1-5: (1: -), (2: 0), (3: 1), (4: 2), (5: 3-4),.
+• PE 6-10: (6: 5), (7: 6-7), (8: 8-9), (9: 10-11), (10: 12-13),.
+• PE 11-15: (11: 14-15), (12: 16-17), (13: 18-19), (14: 20-21), (15: 22-23),.
+• PE 16-19: (16: 24), (17: 25), (18: -), (19: 26),.
+6. Grupos 45:0 a 54:11, 55:0 a 64:11, 65:0 a 69:11 y 70:0 a 74:11 años
+• PE 1-5: (1: -), (2: 0), (3: -), (4: 1-2), (5: 3),,,.
+• PE 6-10: (6: 4-5), (7: 6-7), (8: 8-9), (9: 10-11), (10: 12-13),,,.
+• PE 11-15: (11: 14-15), (12: 16-17), (13: 18-19), (14: 20-21), (15: 22-23),,,.
+• PE 16-19: (16: 24), (17: 25), (18: -), (19: 26),,,.
+7. Grupo 75:0 a 79:11 años
+• PE 1-5: (1: -), (2: 0), (3: -), (4: 1), (5: 2-3).
+• PE 6-10: (6: 4), (7: 5-6), (8: 7-8), (9: 9-10), (10: 11-12).
+• PE 11-15: (11: 13-14), (12: 15-17), (13: 18-19), (14: 20-21), (15: 22-23).
+• PE 16-19: (16: 24), (17: 25), (18: -), (19: 26).
+8. Grupo 80:0 a 84:11 años
+• PE 1-5: (1: -), (2: -), (3: 0), (4: 1), (5: 2).
+• PE 6-10: (6: 3-4), (7: 5-6), (8: 7-8), (9: 9-10), (10: 11-12),.
+• PE 11-15: (11: 13-14), (12: 15-16), (13: 17-18), (14: 19-20), (15: 21-22).
+• PE 16-19: (16: 23), (17: 24), (18: 25), (19: 26).
+9. Grupo 85:0 a 90:11 años
+• PE 1-5: (1: -), (2: -), (3: 0), (4: 1), (5: 2).
+• PE 6-10: (6: 3), (7: 4-5), (8: 6-7), (9: 8-9), (10: 10-11),.
+• PE 11-15: (11: 12-14), (12: 15-16), (13: 17-18), (14: 19-20), (15: 21-22).
+• PE 16-19: (16: 23), (17: 24), (18: 25), (19: 26).
+
+--------------------------------------------------------------------------------
+Instrucciones para el Sistema Online
+1. Lógica del LLM: Debe usar el texto capturado por el STT para decidir si la respuesta es correcta (1 punto) o incorrecta (0 puntos) basándose en los hechos presentados en las "Respuestas de Ejemplo" del manual,.
+2. Diferenciación de respuestas múltiples: Si el usuario ofrece varias respuestas, el sistema debe puntuar la mejor, siempre que no haya malogrado la respuesta correcta con información contradictoria.
+3. No penalización: El sistema no debe restar puntos por gramática o pronunciación pobre.
+4. Cálculo del ICV: Al finalizar Información, suma los PE de Analogías, Vocabulario e Información. Utiliza la Tabla A.2 para derivar el Índice de Comprensión Verbal (ICV) final y su Rango Percentil,.
+Analogía para el código: Implementar estos baremos es como configurar un filtro de sabiduría ajustado por el tiempo. El sistema no solo verifica si el dato es correcto, sino que calibra el valor de ese dato según la edad del usuario: lo que para un joven de 17 años es un nivel de conocimiento promedio (PE 10), para un adulto de 85 años representa un nivel de excelencia normativa superior.

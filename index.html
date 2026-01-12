@@ -111,6 +111,18 @@
             background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
         }
 
+        .card-icon.vocabulary {
+            background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+        }
+
+        .card-icon.information {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        }
+
+        .card-icon.icv {
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+        }
+
         .card h2 {
             font-size: 1.3rem;
             color: var(--text-primary);
@@ -196,6 +208,30 @@
                 <span class="card-badge badge-subtest">Subtest</span>
                 <h2>Analogías</h2>
                 <p>Identifica similitudes entre conceptos. Evaluación con IA usando Gemini API y reconocimiento de voz.</p>
+            </a>
+
+            <!-- Vocabulario -->
+            <a href="vocabulary/index.html" class="card">
+                <div class="card-icon vocabulary">📖</div>
+                <span class="card-badge badge-subtest">Subtest</span>
+                <h2>Vocabulario</h2>
+                <p>Define palabras y conceptos. Evaluación con IA usando Gemini API y reconocimiento de voz.</p>
+            </a>
+
+            <!-- Información -->
+            <a href="information/index.html" class="card">
+                <div class="card-icon information">📚</div>
+                <span class="card-badge badge-subtest">Subtest</span>
+                <h2>Información</h2>
+                <p>Responde preguntas de conocimiento general. Evaluación con IA usando Gemini API.</p>
+            </a>
+
+            <!-- Índice de Comprensión Verbal -->
+            <a href="icv/index.html" class="card">
+                <div class="card-icon icv">🧠</div>
+                <span class="card-badge badge-index">Índice</span>
+                <h2>Comprensión Verbal (ICV)</h2>
+                <p>Calcula el ICV, percentil y clasificación a partir de Analogías, Vocabulario e Información.</p>
             </a>
         </div>
 

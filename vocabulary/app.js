@@ -1,9 +1,9 @@
 /**
  * ============================================
- * WAIS-V Analogías - Aplicación de Entrenamiento
+ * WAIS-V Vocabulario - Aplicación de Entrenamiento
  * ============================================
  * 
- * Simula el proctoreo de la subprueba de Analogías del WAIS-IV/V
+ * Simula el proctoreo de la subprueba de Vocabulario del WAIS-IV/V
  * usando TTS para instrucciones, STT para capturar respuestas,
  * y Gemini API para evaluar las respuestas del usuario.
  * 
@@ -16,41 +16,55 @@
 // ============================================
 
 /**
- * Ítems de la subprueba de Analogías
- * Incluye el ítem de práctica y los 18 ítems oficiales
+ * Ítems de la subprueba de Vocabulario
+ * Incluye ítems ilustrados (1-3) y verbales (4-30)
  */
-const ANALOGIES_ITEMS = [
-    { id: 0, word1: "dos", word2: "siete", isPractice: true, isLearning: false },
-    { id: 1, word1: "tenedor", word2: "cuchara", isPractice: false, isLearning: false },
-    { id: 2, word1: "amarillo", word2: "verde", isPractice: false, isLearning: false },
-    { id: 3, word1: "zanahoria", word2: "coliflor", isPractice: false, isLearning: false },
-    { id: 4, word1: "caballo", word2: "tigre", isPractice: false, isLearning: true }, // Inicio para adultos
-    { id: 5, word1: "guitarra", word2: "tambor", isPractice: false, isLearning: true },
-    { id: 6, word1: "bote", word2: "automóvil", isPractice: false, isLearning: false },
-    { id: 7, word1: "celular", word2: "computador", isPractice: false, isLearning: false },
-    { id: 8, word1: "poema", word2: "escultura", isPractice: false, isLearning: false },
-    { id: 9, word1: "Brasilia", word2: "Montevideo", isPractice: false, isLearning: false },
-    { id: 10, word1: "nariz", word2: "lengua", isPractice: false, isLearning: false },
-    { id: 11, word1: "capullo", word2: "bebé", isPractice: false, isLearning: false },
-    { id: 12, word1: "comida", word2: "gasolina", isPractice: false, isLearning: false },
-    { id: 13, word1: "ancla", word2: "cerco", isPractice: false, isLearning: false },
-    { id: 14, word1: "deseo", word2: "expectativa", isPractice: false, isLearning: false },
-    { id: 15, word1: "permitir", word2: "restringir", isPractice: false, isLearning: false },
-    { id: 16, word1: "Amazonía", word2: "Antártica", isPractice: false, isLearning: false },
-    { id: 17, word1: "aceptación", word2: "negación", isPractice: false, isLearning: false },
-    { id: 18, word1: "amigo", word2: "enemigo", isPractice: false, isLearning: false }
+const VOCABULARY_ITEMS = [
+    // Ítems ilustrados (1-3) - Se pregunta "¿Qué es esto?"
+    { id: 1, word: "Libro", isIllustrated: true, isLearning: false },
+    { id: 2, word: "Avión", isIllustrated: true, isLearning: false },
+    { id: 3, word: "Canasto", isIllustrated: true, isLearning: false },
+    // Ítems verbales (4-30) - Se pregunta "¿Qué significa [palabra]?"
+    { id: 4, word: "Cama", isIllustrated: false, isLearning: false },
+    { id: 5, word: "Manzana", isIllustrated: false, isLearning: true }, // Inicio para adultos
+    { id: 6, word: "Terminar", isIllustrated: false, isLearning: true },
+    { id: 7, word: "Guante", isIllustrated: false, isLearning: false },
+    { id: 8, word: "Desayuno", isIllustrated: false, isLearning: false },
+    { id: 9, word: "Estorbar", isIllustrated: false, isLearning: false },
+    { id: 10, word: "Íntimo", isIllustrated: false, isLearning: false },
+    { id: 11, word: "Ignorante", isIllustrated: false, isLearning: false },
+    { id: 12, word: "Curioso", isIllustrated: false, isLearning: false },
+    { id: 13, word: "Ordinario", isIllustrated: false, isLearning: false },
+    { id: 14, word: "Supremo", isIllustrated: false, isLearning: false },
+    { id: 15, word: "Consumir", isIllustrated: false, isLearning: false },
+    { id: 16, word: "Fortuito", isIllustrated: false, isLearning: false },
+    { id: 17, word: "Cómodo", isIllustrated: false, isLearning: false },
+    { id: 18, word: "Improvisar", isIllustrated: false, isLearning: false },
+    { id: 19, word: "Escéptico", isIllustrated: false, isLearning: false },
+    { id: 20, word: "Expedito", isIllustrated: false, isLearning: false },
+    { id: 21, word: "Plagiar", isIllustrated: false, isLearning: false },
+    { id: 22, word: "Pertinente", isIllustrated: false, isLearning: false },
+    { id: 23, word: "Audaz", isIllustrated: false, isLearning: false },
+    { id: 24, word: "Optimizar", isIllustrated: false, isLearning: false },
+    { id: 25, word: "Instinto", isIllustrated: false, isLearning: false },
+    { id: 26, word: "Bilateral", isIllustrated: false, isLearning: false },
+    { id: 27, word: "Cancillería", isIllustrated: false, isLearning: false },
+    { id: 28, word: "Paliar", isIllustrated: false, isLearning: false },
+    { id: 29, word: "Extraditar", isIllustrated: false, isLearning: false },
+    { id: 30, word: "Subrepticio", isIllustrated: false, isLearning: false }
 ];
 
 /**
  * Índice de inicio para adultos (16-90 años)
- * Se comienza con práctica, luego se salta al ítem 4
+ * Se comienza en el ítem 5 (Manzana)
  */
-const ADULT_START_INDEX = 4;
+const ADULT_START_INDEX = 4; // índice 4 = ítem 5
 
 /**
  * Máximo puntaje posible en la subprueba
+ * Según el manual WAIS-IV (estandarización chilena), el máximo es 57 puntos
  */
-const MAX_SCORE = 36;
+const MAX_SCORE = 57;
 
 /**
  * Número de ceros consecutivos para suspender la prueba
@@ -59,78 +73,100 @@ const DISCONTINUE_THRESHOLD = 3;
 
 /**
  * Baremos para convertir puntaje bruto a puntaje escalar según edad
- * Cada grupo tiene rangos [min, max] para cada PE (1-19)
+ * Basados en la Tabla A.1 del WAIS-IV (estandarización chilena)
+ * Cada array contiene rangos [min, max] para PE 1 a 19
  */
 const BAREMOS = {
     // Grupo 16:0 a 17:11 años
     '16-17': [
-        [0, 5], [6, 7], [8, 8], [9, 11], [12, 13],
-        [14, 15], [16, 17], [18, 19], [20, 21], [22, 23],
-        [24, 25], [26, 26], [27, 27], [28, 29], [30, 30],
-        [31, 31], [32, 32], [33, 33], [34, 36]
+        [0, 0], [1, 1], [2, 4], [5, 6], [7, 10],
+        [11, 14], [15, 18], [19, 22], [23, 26], [27, 29],
+        [30, 33], [34, 36], [37, 40], [41, 43], [44, 46],
+        [47, 49], [50, 52], [53, 54], [55, 57]
     ],
     // Grupo 18:0 a 19:11 años
     '18-19': [
-        [0, 6], [7, 8], [9, 10], [11, 12], [13, 14],
-        [15, 16], [17, 18], [19, 20], [21, 22], [23, 24],
-        [25, 25], [26, 27], [28, 28], [29, 30], [31, 31],
-        [32, 32], [33, 33], [34, 34], [35, 36]
+        [0, 0], [1, 2], [3, 5], [6, 9], [10, 13],
+        [14, 17], [18, 21], [22, 24], [25, 28], [29, 32],
+        [33, 35], [36, 39], [40, 42], [43, 45], [46, 48],
+        [49, 51], [52, 53], [54, 54], [55, 57]
     ],
-    // Grupos 20:0 a 29:11 años
-    '20-29': [
-        [0, 7], [8, 9], [10, 11], [12, 14], [15, 16],
-        [17, 18], [19, 20], [21, 22], [23, 24], [25, 26],
-        [27, 27], [28, 29], [30, 30], [31, 32], [33, 33],
-        [34, 34], [-1, -1], [35, 35], [36, 36]
+    // Grupo 20:0 a 24:11 años (Grupo de Referencia)
+    '20-24': [
+        [0, 2], [3, 5], [6, 8], [9, 12], [13, 15],
+        [16, 19], [20, 23], [24, 27], [28, 31], [32, 35],
+        [36, 38], [39, 42], [43, 45], [46, 48], [49, 50],
+        [51, 52], [53, 53], [54, 54], [55, 57]
+    ],
+    // Grupo 25:0 a 29:11 años
+    '25-29': [
+        [0, 2], [3, 5], [6, 8], [9, 12], [13, 16],
+        [17, 20], [21, 24], [25, 28], [29, 32], [33, 35],
+        [36, 39], [40, 42], [43, 45], [46, 48], [49, 50],
+        [51, 52], [53, 53], [54, 54], [55, 57]
     ],
     // Grupo 30:0 a 34:11 años
     '30-34': [
-        [0, 5], [6, 7], [8, 9], [10, 12], [13, 14],
-        [15, 16], [17, 18], [19, 20], [21, 22], [23, 24],
-        [25, 26], [27, 28], [29, 29], [30, 30], [31, 31],
-        [32, 32], [33, 33], [34, 34], [35, 36]
+        [0, 2], [3, 5], [6, 8], [9, 12], [13, 15],
+        [16, 19], [20, 23], [24, 27], [28, 31], [32, 34],
+        [35, 38], [39, 42], [43, 45], [46, 48], [49, 50],
+        [51, 52], [53, 53], [54, 54], [55, 57]
     ],
     // Grupo 35:0 a 44:11 años
     '35-44': [
-        [0, 5], [6, 7], [8, 9], [10, 12], [13, 14],
-        [15, 16], [17, 18], [19, 20], [21, 22], [23, 24],
-        [25, 26], [27, 27], [28, 29], [30, 30], [31, 31],
-        [32, 32], [33, 33], [34, 34], [35, 36]
+        [0, 2], [3, 4], [5, 7], [8, 11], [12, 15],
+        [16, 19], [20, 23], [24, 27], [28, 31], [32, 34],
+        [35, 38], [39, 41], [42, 44], [45, 47], [48, 50],
+        [51, 52], [53, 53], [54, 54], [55, 57]
     ],
-    // Grupos 45:0 a 64:11 años
-    '45-64': [
-        [0, 4], [5, 7], [8, 9], [10, 11], [12, 13],
-        [14, 15], [16, 18], [19, 20], [21, 22], [23, 24],
-        [25, 25], [26, 27], [28, 29], [30, 30], [31, 31],
-        [32, 32], [33, 33], [34, 34], [35, 36]
+    // Grupos 45:0 a 54:11 años
+    '45-54': [
+        [0, 2], [3, 4], [5, 7], [8, 10], [11, 14],
+        [15, 18], [19, 22], [23, 25], [26, 29], [30, 32],
+        [33, 36], [37, 39], [40, 43], [44, 46], [47, 49],
+        [50, 52], [53, 53], [54, 54], [55, 57]
+    ],
+    // Grupos 55:0 a 64:11 años
+    '55-64': [
+        [0, 2], [3, 4], [5, 7], [8, 10], [11, 14],
+        [15, 18], [19, 21], [22, 25], [26, 28], [29, 32],
+        [33, 35], [36, 39], [40, 43], [44, 46], [47, 49],
+        [50, 52], [53, 53], [54, 54], [55, 57]
     ],
     // Grupo 65:0 a 69:11 años
     '65-69': [
-        [0, 3], [4, 5], [6, 7], [8, 10], [11, 12],
-        [13, 14], [15, 16], [17, 18], [19, 20], [21, 22],
-        [23, 24], [25, 26], [27, 27], [28, 29], [30, 30],
-        [31, 31], [32, 32], [33, 33], [34, 36]
+        [0, 1], [2, 3], [4, 6], [7, 9], [10, 13],
+        [14, 16], [17, 20], [21, 23], [24, 27], [28, 31],
+        [32, 34], [35, 38], [39, 41], [42, 45], [46, 48],
+        [49, 51], [52, 53], [54, 54], [55, 57]
     ],
-    // Grupos 70:0 a 79:11 años
-    '70-79': [
-        [0, 2], [3, 4], [5, 7], [8, 9], [10, 11],
-        [12, 13], [14, 15], [16, 17], [18, 19], [20, 21],
-        [22, 23], [24, 25], [26, 26], [27, 28], [29, 29],
-        [30, 30], [31, 31], [32, 32], [33, 36]
+    // Grupos 70:0 a 74:11 años
+    '70-74': [
+        [0, 1], [2, 3], [4, 6], [7, 9], [10, 12],
+        [13, 15], [16, 19], [20, 23], [24, 26], [27, 30],
+        [31, 34], [35, 37], [38, 41], [42, 44], [45, 48],
+        [49, 51], [52, 53], [54, 54], [55, 57]
+    ],
+    // Grupos 75:0 a 79:11 años
+    '75-79': [
+        [0, 1], [2, 3], [4, 6], [7, 9], [10, 12],
+        [13, 15], [16, 19], [20, 23], [24, 26], [27, 30],
+        [31, 34], [35, 37], [38, 41], [42, 44], [45, 48],
+        [49, 51], [52, 53], [54, 54], [55, 57]
     ],
     // Grupo 80:0 a 84:11 años
     '80-84': [
-        [0, 1], [2, 3], [4, 5], [6, 7], [8, 10],
-        [11, 12], [13, 14], [15, 16], [17, 18], [19, 20],
-        [21, 22], [23, 24], [25, 25], [26, 27], [28, 28],
-        [29, 30], [31, 31], [32, 32], [33, 36]
+        [0, 1], [2, 3], [4, 6], [7, 8], [9, 11],
+        [12, 14], [15, 18], [19, 21], [22, 25], [26, 28],
+        [29, 32], [33, 36], [37, 39], [40, 43], [44, 47],
+        [48, 50], [51, 52], [53, 54], [55, 57]
     ],
     // Grupo 85:0 a 90:11 años
     '85-90': [
-        [0, 0], [1, 2], [3, 4], [5, 6], [7, 8],
-        [9, 10], [11, 12], [13, 14], [15, 16], [17, 18],
-        [19, 20], [21, 22], [23, 24], [25, 26], [27, 27],
-        [28, 29], [30, 30], [31, 31], [32, 36]
+        [0, 0], [1, 1], [2, 3], [4, 6], [7, 9],
+        [10, 13], [14, 16], [17, 19], [20, 23], [24, 26],
+        [27, 30], [31, 34], [35, 38], [39, 42], [43, 46],
+        [47, 50], [51, 52], [53, 54], [55, 57]
     ]
 };
 
@@ -148,7 +184,6 @@ const state = {
     scores: [],
     consecutiveZeros: 0,
     isTestActive: false,
-    isPracticeComplete: false,
     isRecording: false,
     isEvaluating: false,
     needsProbe: false,
@@ -174,7 +209,6 @@ const elements = {
     recordBtn: document.getElementById('record-btn'),
     recordText: document.getElementById('record-text'),
     repeatBtn: document.getElementById('repeat-btn'),
-    nextBtn: document.getElementById('next-btn'),
     restartBtn: document.getElementById('restart-btn'),
     stimulusDisplay: document.getElementById('stimulus-display'),
     progressFill: document.getElementById('progress-fill'),
@@ -233,13 +267,10 @@ function wait(ms) {
 
 /**
  * Muestra el input de texto como fallback cuando el reconocimiento de voz falla
- * Permite al usuario escribir su respuesta en lugar de hablar
  */
 function showTextInputFallback() {
-    // Ocultar botón de grabación
     toggleElement(elements.recordBtn, false);
     
-    // Mostrar input de texto
     const fallbackContainer = document.getElementById('text-input-fallback');
     const textInput = document.getElementById('text-response-input');
     const submitBtn = document.getElementById('submit-text-btn');
@@ -248,7 +279,6 @@ function showTextInputFallback() {
         toggleElement(fallbackContainer, true);
         textInput.focus();
         
-        // Agregar event listeners si no existen
         if (!submitBtn.hasAttribute('data-listener')) {
             submitBtn.setAttribute('data-listener', 'true');
             
@@ -277,18 +307,15 @@ function showTextInputFallback() {
 
 /**
  * Obtiene la mejor voz en español disponible en el sistema
- * Prioriza voces femeninas y de alta calidad
  * @returns {SpeechSynthesisVoice|null} La voz seleccionada o null
  */
 function getBestSpanishVoice() {
     const voices = state.synthesis.getVoices();
     
-    // Prioridad: voces en español de alta calidad
     const spanishVoices = voices.filter(v => 
         v.lang.startsWith('es') || v.lang.includes('ES')
     );
     
-    // Preferir voces de Microsoft o Google (suelen ser de mejor calidad)
     const preferredVoice = spanishVoices.find(v => 
         v.name.includes('Microsoft') || 
         v.name.includes('Google') ||
@@ -307,7 +334,6 @@ function getBestSpanishVoice() {
  */
 function speak(text, rate = 0.9) {
     return new Promise((resolve, reject) => {
-        // Cancelar cualquier síntesis en curso
         state.synthesis.cancel();
         
         const utterance = new SpeechSynthesisUtterance(text);
@@ -320,7 +346,7 @@ function speak(text, rate = 0.9) {
         utterance.onend = () => resolve();
         utterance.onerror = (event) => {
             console.error('Error en TTS:', event);
-            resolve(); // Resolver de todos modos para no bloquear
+            resolve();
         };
         
         state.synthesis.speak(utterance);
@@ -328,14 +354,15 @@ function speak(text, rate = 0.9) {
 }
 
 /**
- * Genera la frase de la pregunta de analogía
- * Siguiendo las instrucciones del manual: sin artículos
- * @param {string} word1 - Primera palabra
- * @param {string} word2 - Segunda palabra
- * @returns {string} La frase formateada
+ * Genera la pregunta según el tipo de ítem
+ * @param {Object} item - El ítem actual
+ * @returns {string} La pregunta formateada
  */
-function generateAnalogiesQuestion(word1, word2) {
-    return `¿En qué se parecen ${word1} y ${word2}?`;
+function generateQuestion(item) {
+    if (item.isIllustrated) {
+        return `¿Qué es esto?`;
+    }
+    return `¿Qué significa ${item.word}?`;
 }
 
 // ============================================
@@ -344,10 +371,8 @@ function generateAnalogiesQuestion(word1, word2) {
 
 /**
  * Inicializa el reconocimiento de voz con la API Web Speech
- * Configura eventos y parámetros para una experiencia natural
  */
 function initializeSpeechRecognition() {
-    // Verificar soporte del navegador
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     
     if (!SpeechRecognition) {
@@ -361,21 +386,17 @@ function initializeSpeechRecognition() {
     state.recognition.interimResults = true;
     state.recognition.maxAlternatives = 1;
     
-    // Evento: resultado de reconocimiento
     state.recognition.onresult = (event) => {
         const result = event.results[event.results.length - 1];
         const transcript = result[0].transcript;
         
-        // Mostrar resultado intermedio
         elements.userResponseText.textContent = transcript;
         
-        // Si es resultado final, procesar
         if (result.isFinal) {
             handleUserResponse(transcript);
         }
     };
     
-    // Evento: inicio de grabación
     state.recognition.onstart = () => {
         state.isRecording = true;
         elements.recordBtn.classList.add('recording');
@@ -383,7 +404,6 @@ function initializeSpeechRecognition() {
         elements.recordText.textContent = 'Detener grabación';
     };
     
-    // Evento: fin de grabación
     state.recognition.onend = () => {
         state.isRecording = false;
         elements.recordBtn.classList.remove('recording');
@@ -391,7 +411,6 @@ function initializeSpeechRecognition() {
         elements.recordText.textContent = 'Comenzar a grabar';
     };
     
-    // Evento: error
     state.recognition.onerror = (event) => {
         console.error('Error en reconocimiento:', event.error);
         state.isRecording = false;
@@ -404,26 +423,22 @@ function initializeSpeechRecognition() {
                 showStatus('No se detectó voz. Intenta de nuevo.', 'info');
                 break;
             case 'not-allowed':
-                showStatus('Permiso de micrófono denegado. Habilita el micrófono en tu navegador.', 'error');
+                showStatus('Permiso de micrófono denegado.', 'error');
                 break;
             case 'network':
-                showStatus('Error de red. Asegúrate de tener conexión a internet.', 'error');
-                // Mostrar input de texto como fallback
+                showStatus('Error de red. Usa el input de texto.', 'error');
                 showTextInputFallback();
                 break;
-            case 'aborted':
-                // Usuario canceló, no mostrar error
-                break;
             case 'audio-capture':
-                showStatus('No se encontró micrófono. Verifica tu dispositivo de audio.', 'error');
+                showStatus('No se encontró micrófono.', 'error');
                 showTextInputFallback();
                 break;
             case 'service-not-allowed':
-                showStatus('Servicio de voz no permitido. Usa HTTPS o localhost.', 'error');
+                showStatus('Servicio de voz no permitido. Usa HTTPS.', 'error');
                 showTextInputFallback();
                 break;
             default:
-                showStatus(`Error de reconocimiento: ${event.error}`, 'error');
+                showStatus(`Error: ${event.error}`, 'error');
         }
     };
     
@@ -432,7 +447,6 @@ function initializeSpeechRecognition() {
 
 /**
  * Alterna el estado de grabación (toggle on/off)
- * Si está grabando, detiene. Si no, inicia.
  */
 function toggleRecording() {
     if (!state.recognition) {
@@ -440,14 +454,12 @@ function toggleRecording() {
     }
     
     if (state.isRecording) {
-        // Detener grabación
         try {
             state.recognition.stop();
         } catch (e) {
             console.error('Error al detener grabación:', e);
         }
     } else {
-        // Iniciar grabación
         toggleElement(elements.responseDisplay, true);
         elements.userResponseText.textContent = '...';
         
@@ -465,69 +477,73 @@ function toggleRecording() {
 
 /**
  * Construye el prompt del sistema para Gemini
- * Actúa como un psicólogo experto en WAIS-IV
+ * Actúa como un psicólogo experto en WAIS-IV para Vocabulario
  * @returns {string} El prompt del sistema
  */
 function buildSystemPrompt() {
-    return `Eres un psicólogo experto en la administración del WAIS-IV, específicamente en la subprueba de Analogías del Índice de Comprensión Verbal (ICV).
+    return `Eres un psicólogo experto en la administración del WAIS-IV, específicamente en la subprueba de Vocabulario del Índice de Comprensión Verbal (ICV).
 
-Tu rol es evaluar las respuestas del usuario a preguntas de analogías, asignando puntajes de 0, 1 o 2 puntos según los criterios del manual.
+Tu rol es evaluar las respuestas del usuario cuando se le pide definir palabras, asignando puntajes de 0, 1 o 2 puntos según los criterios del manual.
 
 CRITERIOS DE PUNTUACIÓN:
 
-**2 puntos** - Respuesta de alta abstracción:
-- Identifica la categoría conceptual superior que une ambos elementos
-- Usa conceptos abstractos y generales
-- Ejemplo para "caballo y tigre": "Son mamíferos" o "Son animales"
+**2 puntos** - Definición precisa y completa:
+- Buen sinónimo de la palabra
+- Clasificación general correcta (categoría + función/característica)
+- Definición que demuestra comprensión profunda del concepto
+- Ejemplo: Para "Guante" → "Es una prenda de vestir para las manos"
 
-**1 punto** - Respuesta parcialmente correcta:
-- Identifica una similitud menor o concreta
-- Describe una propiedad compartida pero no la categoría esencial
-- Ejemplo para "caballo y tigre": "Tienen cuatro patas" o "Tienen pelo"
+**1 punto** - Definición parcialmente correcta:
+- Respuesta vaga pero en la dirección correcta
+- Descripción meramente funcional sin categorización
+- Sinónimo pobre o ejemplo concreto sin generalización
+- Ejemplo: Para "Guante" → "Van en las manos" (correcto pero incompleto)
 
-**0 puntos** - Respuesta incorrecta o irrelevante:
-- No identifica ninguna similitud válida
-- Describe diferencias en lugar de similitudes
-- Respuesta vaga sin contenido relevante
+**0 puntos** - Respuesta incorrecta:
+- No demuestra comprensión del significado
+- Respuesta demasiado trivial o genérica
+- Confusión con otra palabra
 - No responde o dice "no sé"
+- Ejemplo: Para "Guante" → "Para el invierno" (muy vago)
 
 CONSULTA (P):
-Si la respuesta es vaga pero parece apuntar en la dirección correcta, debes indicar que se necesita una consulta adicional. Las respuestas que ameritan consulta son aquellas donde el usuario da una pista pero no elabora suficientemente.
+Si la respuesta es una descripción funcional sin categoría (ej: "es para comer" para una fruta), 
+o si parece que el usuario sabe pero no elabora suficiente, indica que necesita consulta.
+La consulta típica es: "Sí, pero ¿qué es?" o "¿Qué quiere decir con eso?" o "Dígame algo más"
 
 FORMATO DE RESPUESTA (JSON estricto):
 {
     "score": <0, 1, o 2>,
     "needsProbe": <true si necesita consulta adicional, false si no>,
-    "probeQuestion": "<pregunta de consulta si needsProbe es true, ej: '¿Qué quiere decir con eso?' o 'Dígame algo más sobre eso'>",
-    "explanation": "<breve explicación del puntaje asignado>",
-    "idealAnswer": "<ejemplo de respuesta de 2 puntos para referencia>"
+    "probeQuestion": "<pregunta de consulta si needsProbe es true>",
+    "explanation": "<breve explicación del puntaje asignado>"
 }
 
 IMPORTANTE:
-- Sé justo pero estricto con los criterios
-- Considera sinónimos y formas alternativas de expresar la misma idea
-- Si el usuario da múltiples respuestas, puntúa la mejor siempre que una no invalide a la otra
-- Las respuestas coloquiales pero correctas deben recibir el puntaje correspondiente`;
+- No penalices por gramática pobre o mala pronunciación
+- Enfócate únicamente en el contenido conceptual
+- Si el usuario da múltiples respuestas, puntúa la mejor
+- Considera sinónimos y expresiones coloquiales válidas`;
 }
 
 /**
  * Evalúa la respuesta del usuario usando la API de Gemini
- * @param {string} word1 - Primera palabra de la analogía
- * @param {string} word2 - Segunda palabra de la analogía
+ * @param {string} word - La palabra a definir
  * @param {string} userResponse - Respuesta del usuario
  * @param {boolean} isProbeResponse - Si es respuesta a una consulta adicional
  * @returns {Promise<Object>} Resultado de la evaluación
  */
-async function evaluateWithGemini(word1, word2, userResponse, isProbeResponse = false) {
+async function evaluateWithGemini(word, userResponse, isProbeResponse = false) {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${state.apiKey}`;
     
     const contextMessage = isProbeResponse 
-        ? `El usuario ya dio una respuesta inicial vaga y ahora responde a la consulta adicional.`
+        ? `El usuario ya dio una respuesta inicial y ahora responde a la consulta adicional.`
         : `Esta es la respuesta inicial del usuario.`;
     
-    const userPrompt = `Evalúa la siguiente respuesta a la pregunta de analogías:
+    const userPrompt = `Evalúa la siguiente respuesta a la pregunta de vocabulario:
 
-Pregunta: ¿En qué se parecen ${word1} y ${word2}?
+Palabra: ${word}
+Pregunta: ¿Qué significa "${word}"?
 Respuesta del usuario: "${userResponse}"
 
 ${contextMessage}
@@ -567,7 +583,6 @@ Responde ÚNICAMENTE con el JSON especificado, sin texto adicional.`;
         const data = await response.json();
         const textResponse = data.candidates[0].content.parts[0].text;
         
-        // Extraer JSON de la respuesta
         const jsonMatch = textResponse.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
             return JSON.parse(jsonMatch[0]);
@@ -579,13 +594,11 @@ Responde ÚNICAMENTE con el JSON especificado, sin texto adicional.`;
         console.error('Error al evaluar con Gemini:', error);
         showStatus('Error al evaluar respuesta', 'error');
         
-        // Retornar evaluación por defecto en caso de error
         return {
             score: 0,
             needsProbe: false,
             probeQuestion: '',
-            explanation: 'Error en la evaluación',
-            idealAnswer: ''
+            explanation: 'Error en la evaluación'
         };
     }
 }
@@ -596,30 +609,22 @@ Responde ÚNICAMENTE con el JSON especificado, sin texto adicional.`;
 
 /**
  * Inicia la evaluación desde el principio
- * Configura el estado inicial y muestra el ítem de práctica
  */
 async function startTest() {
     state.isTestActive = true;
-    state.currentItemIndex = 0;
+    state.currentItemIndex = ADULT_START_INDEX; // Comenzar en ítem 5
     state.scores = [];
     state.consecutiveZeros = 0;
-    state.isPracticeComplete = false;
     
-    // Ocultar botón de inicio, mostrar controles
     toggleElement(elements.startBtn, false);
     toggleElement(elements.recordBtn, true);
     toggleElement(elements.repeatBtn, true);
     
-    // Inicializar reconocimiento de voz
     initializeSpeechRecognition();
     
-    // Instrucciones iniciales
-    await speak('Vamos a realizar una actividad en la que te voy a decir dos palabras y tú me dirás en qué se parecen.', 0.85);
+    await speak('Vamos a realizar una actividad en la que te voy a decir una palabra y tú me dirás qué significa.', 0.85);
     await wait(500);
-    await speak('Por ejemplo, te voy a preguntar:', 0.85);
-    await wait(300);
     
-    // Mostrar ítem de práctica
     displayCurrentItem();
 }
 
@@ -627,35 +632,33 @@ async function startTest() {
  * Muestra el ítem actual en pantalla y lo lee con TTS
  */
 async function displayCurrentItem() {
-    const item = ANALOGIES_ITEMS[state.currentItemIndex];
+    const item = VOCABULARY_ITEMS[state.currentItemIndex];
     
-    // Limpiar estados anteriores
     toggleElement(elements.feedbackSection, false);
     toggleElement(elements.responseDisplay, false);
     state.needsProbe = false;
     state.probeAttempts = 0;
     
-    // Actualizar barra de progreso
     updateProgress();
     
     // Construir el display del estímulo
     let badgeHTML = '';
-    if (item.isPractice) {
-        badgeHTML = '<span class="practice-badge">Ítem de Práctica</span>';
-    } else {
-        const learningBadge = item.isLearning ? '<span class="learning-badge">Aprendizaje</span>' : '';
-        badgeHTML = `<span class="item-number">Ítem ${item.id}${learningBadge}</span>`;
+    if (item.isIllustrated) {
+        badgeHTML = '<span class="illustrated-badge">Ítem Ilustrado</span>';
     }
     
+    const learningBadge = item.isLearning ? '<span class="learning-badge">Aprendizaje</span>' : '';
+    
     elements.stimulusDisplay.innerHTML = `
+        <span class="item-number">Ítem ${item.id}${learningBadge}</span>
         ${badgeHTML}
-        <p class="stimulus-question">¿En qué se parecen...</p>
-        <p class="stimulus-words">${item.word1} y ${item.word2}?</p>
+        <p class="stimulus-question">${item.isIllustrated ? '¿Qué es esto?' : '¿Qué significa...?'}</p>
+        <p class="stimulus-word">${item.word}</p>
     `;
     
     // Leer la pregunta con TTS
     await wait(500);
-    const question = generateAnalogiesQuestion(item.word1, item.word2);
+    const question = generateQuestion(item);
     await speak(question, 0.85);
 }
 
@@ -663,12 +666,12 @@ async function displayCurrentItem() {
  * Actualiza la barra de progreso
  */
 function updateProgress() {
-    const totalItems = ANALOGIES_ITEMS.length - 1; // Excluir práctica
+    const totalItems = VOCABULARY_ITEMS.length;
     const completedItems = state.scores.length;
     const percentage = (completedItems / totalItems) * 100;
     
     elements.progressFill.style.width = `${percentage}%`;
-    elements.progressText.textContent = `Ítem ${completedItems} de ${totalItems}`;
+    elements.progressText.textContent = `Ítem ${state.currentItemIndex + 1} de ${totalItems}`;
 }
 
 /**
@@ -679,9 +682,8 @@ async function handleUserResponse(response) {
     if (!response.trim() || state.isEvaluating) return;
     
     state.isEvaluating = true;
-    const item = ANALOGIES_ITEMS[state.currentItemIndex];
+    const item = VOCABULARY_ITEMS[state.currentItemIndex];
     
-    // Mostrar estado de evaluación
     toggleElement(elements.feedbackSection, true);
     elements.feedbackContent.innerHTML = `
         <div class="evaluating-state">
@@ -689,12 +691,9 @@ async function handleUserResponse(response) {
             <p>Evaluando respuesta...</p>
         </div>
     `;
-    toggleElement(elements.nextBtn, false);
     
-    // Evaluar con Gemini
     const evaluation = await evaluateWithGemini(
-        item.word1, 
-        item.word2, 
+        item.word, 
         response, 
         state.probeAttempts > 0
     );
@@ -711,43 +710,24 @@ async function handleUserResponse(response) {
             </div>
         `;
         
-        // Leer la consulta
         await speak(evaluation.probeQuestion, 0.85);
         return;
     }
     
-    // Mostrar resultado de la evaluación
     displayFeedback(evaluation, item);
     state.isEvaluating = false;
 }
 
 /**
  * Muestra el feedback de la evaluación al usuario
- * Avanza automáticamente al siguiente ítem después de mostrar el feedback
  * @param {Object} evaluation - Resultado de la evaluación
  * @param {Object} item - Ítem actual
  */
 async function displayFeedback(evaluation, item) {
     const { score, explanation } = evaluation;
     
-    // Tiempo de espera antes de pasar al siguiente ítem (en ms)
     const AUTO_ADVANCE_DELAY = 2000;
     
-    // Para ítems de práctica
-    if (item.isPractice) {
-        elements.feedbackContent.innerHTML = `
-            <div class="score-badge score-${score}">${score}</div>
-            <p class="feedback-text">${explanation}</p>
-            <p class="auto-advance-notice">Continuando en unos segundos...</p>
-        `;
-        
-        // Esperar y avanzar automáticamente
-        await wait(AUTO_ADVANCE_DELAY);
-        nextItem();
-        return;
-    }
-    
-    // Para todos los ítems (incluyendo aprendizaje), solo mostrar puntuación
     elements.feedbackContent.innerHTML = `
         <div class="score-badge score-${score}">${score}</div>
         <p class="feedback-text">${explanation}</p>
@@ -777,7 +757,6 @@ async function displayFeedback(evaluation, item) {
         return;
     }
     
-    // Esperar y avanzar automáticamente
     await wait(AUTO_ADVANCE_DELAY);
     nextItem();
 }
@@ -786,17 +765,9 @@ async function displayFeedback(evaluation, item) {
  * Avanza al siguiente ítem
  */
 async function nextItem() {
-    // Si terminó la práctica, saltar al ítem 4 (inicio para adultos)
-    if (ANALOGIES_ITEMS[state.currentItemIndex].isPractice) {
-        state.isPracticeComplete = true;
-        state.currentItemIndex = ADULT_START_INDEX;
-        elements.nextBtn.innerHTML = '<span>Siguiente ítem</span><span class="btn-icon">→</span>';
-    } else {
-        state.currentItemIndex++;
-    }
+    state.currentItemIndex++;
     
-    // Verificar si llegamos al final o criterio de suspensión
-    if (state.currentItemIndex >= ANALOGIES_ITEMS.length || 
+    if (state.currentItemIndex >= VOCABULARY_ITEMS.length || 
         state.consecutiveZeros >= DISCONTINUE_THRESHOLD) {
         showResults();
         return;
@@ -809,8 +780,8 @@ async function nextItem() {
  * Repite la pregunta actual con TTS
  */
 async function repeatQuestion() {
-    const item = ANALOGIES_ITEMS[state.currentItemIndex];
-    const question = generateAnalogiesQuestion(item.word1, item.word2);
+    const item = VOCABULARY_ITEMS[state.currentItemIndex];
+    const question = generateQuestion(item);
     await speak(question, 0.85);
 }
 
@@ -822,15 +793,18 @@ async function repeatQuestion() {
 function getAgeGroup(age) {
     if (age >= 16 && age <= 17) return '16-17';
     if (age >= 18 && age <= 19) return '18-19';
-    if (age >= 20 && age <= 29) return '20-29';
+    if (age >= 20 && age <= 24) return '20-24';
+    if (age >= 25 && age <= 29) return '25-29';
     if (age >= 30 && age <= 34) return '30-34';
     if (age >= 35 && age <= 44) return '35-44';
-    if (age >= 45 && age <= 64) return '45-64';
+    if (age >= 45 && age <= 54) return '45-54';
+    if (age >= 55 && age <= 64) return '55-64';
     if (age >= 65 && age <= 69) return '65-69';
-    if (age >= 70 && age <= 79) return '70-79';
+    if (age >= 70 && age <= 74) return '70-74';
+    if (age >= 75 && age <= 79) return '75-79';
     if (age >= 80 && age <= 84) return '80-84';
     if (age >= 85 && age <= 90) return '85-90';
-    return '20-29'; // Default
+    return '20-24';
 }
 
 /**
@@ -845,14 +819,12 @@ function calculateScaledScore(rawScore, age) {
     
     for (let pe = 0; pe < ranges.length; pe++) {
         const [min, max] = ranges[pe];
-        if (min === -1) continue; // Rango no válido
         if (rawScore >= min && rawScore <= max) {
-            return pe + 1; // PE es 1-indexed
+            return pe + 1;
         }
     }
     
-    // Si no se encuentra, devolver el máximo o mínimo
-    if (rawScore >= 36) return 19;
+    if (rawScore >= 60) return 19;
     return 1;
 }
 
@@ -862,11 +834,9 @@ function calculateScaledScore(rawScore, age) {
 function showResults() {
     state.isTestActive = false;
     
-    // Ocultar sección de test, mostrar resultados
     toggleElement(elements.testSection, false);
     toggleElement(elements.resultsSection, true);
     
-    // Calcular puntaje total
     const totalScore = state.scores.reduce((sum, item) => sum + item.score, 0);
     const scaledScore = calculateScaledScore(totalScore, state.userAge);
     const ageGroup = getAgeGroup(state.userAge);
@@ -875,7 +845,6 @@ function showResults() {
     document.getElementById('scaled-score').textContent = scaledScore;
     document.getElementById('age-group-display').textContent = `Grupo de edad: ${ageGroup} años`;
     
-    // Generar desglose de ítems
     let breakdownHTML = '';
     state.scores.forEach(item => {
         breakdownHTML += `
@@ -907,11 +876,11 @@ function restartTest() {
     `;
     
     elements.progressFill.style.width = '0%';
-    elements.progressText.textContent = 'Ítem 0 de 18';
+    elements.progressText.textContent = 'Ítem 0 de 30';
     
     state.scores = [];
     state.consecutiveZeros = 0;
-    state.currentItemIndex = 0;
+    state.currentItemIndex = ADULT_START_INDEX;
 }
 
 // ============================================
@@ -971,28 +940,19 @@ function checkStoredApiKey() {
  * Inicializa todos los event listeners de la aplicación
  */
 function initializeEventListeners() {
-    // Guardar API Key
     elements.saveApiKeyBtn.addEventListener('click', saveApiKey);
     elements.apiKeyInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') saveApiKey();
     });
     
-    // Iniciar test
     elements.startBtn.addEventListener('click', startTest);
     
-    // Grabación de voz (toggle on/off)
     elements.recordBtn.addEventListener('click', toggleRecording);
     
-    // Repetir pregunta
     elements.repeatBtn.addEventListener('click', repeatQuestion);
     
-    // Siguiente ítem
-    elements.nextBtn.addEventListener('click', nextItem);
-    
-    // Reiniciar
     elements.restartBtn.addEventListener('click', restartTest);
     
-    // Cargar voces cuando estén disponibles
     if (state.synthesis.onvoiceschanged !== undefined) {
         state.synthesis.onvoiceschanged = () => {
             getBestSpanishVoice();
@@ -1006,22 +966,15 @@ function initializeEventListeners() {
 
 /**
  * Función principal de inicialización
- * Se ejecuta cuando el DOM está completamente cargado
  */
 function init() {
-    console.log('WAIS-V Analogías - Inicializando...');
+    console.log('WAIS-V Vocabulario - Inicializando...');
     
-    // Verificar API key guardada
     checkStoredApiKey();
-    
-    // Inicializar eventos
     initializeEventListeners();
-    
-    // Pre-cargar voces
     state.synthesis.getVoices();
     
-    console.log('WAIS-V Analogías - Listo');
+    console.log('WAIS-V Vocabulario - Listo');
 }
 
-// Ejecutar cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', init);

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WAIS-V ICV - Índice de Comprensión Verbal</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Botón Volver -->
+        <a href="../index.html" class="back-button">
+            <span class="back-icon">←</span>
+            <span>Volver al inicio</span>
+        </a>
+
+        <header class="header">
+            <h1>🧠 Índice de Comprensión Verbal</h1>
+            <p>Calculadora ICV - WAIS-V</p>
+        </header>
+
+        <!-- Sección de Input -->
+        <section class="input-section">
+            <div class="input-card">
+                <h2>📝 Ingresa los Puntajes Escalares</h2>
+                <p class="input-description">Introduce los puntajes escalares (PE) obtenidos en cada subprueba (1-19)</p>
+
+                <div class="scores-grid">
+                    <!-- Analogías -->
+                    <div class="score-input-group">
+                        <label for="analogies-score">
+                            <span class="subtest-icon analogies">🔗</span>
+                            Analogías
+                        </label>
+                        <input type="number" id="analogies-score" min="1" max="19" placeholder="PE">
+                        <span class="score-range">1-19</span>
+                    </div>
+
+                    <!-- Vocabulario -->
+                    <div class="score-input-group">
+                        <label for="vocabulary-score">
+                            <span class="subtest-icon vocabulary">📖</span>
+                            Vocabulario
+                        </label>
+                        <input type="number" id="vocabulary-score" min="1" max="19" placeholder="PE">
+                        <span class="score-range">1-19</span>
+                    </div>
+
+                    <!-- Información -->
+                    <div class="score-input-group">
+                        <label for="information-score">
+                            <span class="subtest-icon information">📚</span>
+                            Información
+                        </label>
+                        <input type="number" id="information-score" min="1" max="19" placeholder="PE">
+                        <span class="score-range">1-19</span>
+                    </div>
+                </div>
+
+                <button id="calculate-btn" class="btn btn-primary">
+                    🧮 Calcular ICV
+                </button>
+            </div>
+        </section>
+
+        <!-- Sección de Resultados -->
+        <section id="results-section" class="results-section hidden">
+            <div class="results-card">
+                <h2>📊 Resultados</h2>
+
+                <!-- Suma de PE -->
+                <div class="sum-display">
+                    <span class="sum-label">Suma de Puntajes Escalares</span>
+                    <div class="sum-breakdown">
+                        <span id="ana-value" class="breakdown-item">--</span>
+                        <span class="operator">+</span>
+                        <span id="voc-value" class="breakdown-item">--</span>
+                        <span class="operator">+</span>
+                        <span id="inf-value" class="breakdown-item">--</span>
+                        <span class="operator">=</span>
+                        <span id="sum-value" class="breakdown-total">--</span>
+                    </div>
+                </div>
+
+                <!-- ICV y Percentil -->
+                <div class="main-results">
+                    <div class="result-box icv-box">
+                        <span class="result-label">ICV</span>
+                        <span id="icv-value" class="result-value">--</span>
+                        <span class="result-sublabel">Puntaje Compuesto</span>
+                    </div>
+                    <div class="result-box percentile-box">
+                        <span class="result-label">Percentil</span>
+                        <span id="percentile-value" class="result-value">--</span>
+                        <span class="result-sublabel">Rango</span>
+                    </div>
+                </div>
+
+                <!-- Clasificación -->
+                <div class="classification-display">
+                    <span class="classification-label">Clasificación Descriptiva</span>
+                    <div id="classification-badge" class="classification-badge">
+                        --
+                    </div>
+                </div>
+
+                <!-- Interpretación Visual -->
+                <div class="visual-interpretation">
+                    <h3>📈 Posición en la Curva Normal</h3>
+                    <div class="bell-curve-container">
+                        <div class="bell-curve">
+                            <div class="curve-sections">
+                                <div class="section very-low" data-range="<70">
+                                    <span class="section-label">Muy Bajo</span>
+                                </div>
+                                <div class="section borderline" data-range="70-79">
+                                    <span class="section-label">Limítrofe</span>
+                                </div>
+                                <div class="section below-avg" data-range="80-89">
+                                    <span class="section-label">Bajo Promedio</span>
+                                </div>
+                                <div class="section average" data-range="90-109">
+                                    <span class="section-label">Promedio</span>
+                                </div>
+                                <div class="section above-avg" data-range="110-119">
+                                    <span class="section-label">Sobre Promedio</span>
+                                </div>
+                                <div class="section superior" data-range="120-129">
+                                    <span class="section-label">Superior</span>
+                                </div>
+                                <div class="section very-superior" data-range=">130">
+                                    <span class="section-label">Muy Superior</span>
+                                </div>
+                            </div>
+                            <div id="icv-marker" class="icv-marker hidden">
+                                <div class="marker-line"></div>
+                                <div class="marker-label">ICV: <span id="marker-value">--</span></div>
+                            </div>
+                        </div>
+                        <div class="curve-scale">
+                            <span>55</span>
+                            <span>70</span>
+                            <span>85</span>
+                            <span>100</span>
+                            <span>115</span>
+                            <span>130</span>
+                            <span>145</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Descripción -->
+                <div id="interpretation-text" class="interpretation-text">
+                    <!-- Texto interpretativo se insertará aquí -->
+                </div>
+
+                <button id="reset-btn" class="btn btn-secondary">
+                    🔄 Nueva Calculación
+                </button>
+            </div>
+        </section>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

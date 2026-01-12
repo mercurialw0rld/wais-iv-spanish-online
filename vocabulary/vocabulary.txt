@@ -1,0 +1,38 @@
+. Vocabulario (Voc)
+Evalúa la capacidad del usuario para definir palabras presentadas de forma visual y auditiva.
+• Implementación Online:
+    ◦ UI/Visual: Debes mostrar la palabra escrita en pantalla de forma clara mientras el TTS la lee.
+    ◦ TTS: Debe preguntar: "¿Qué significa [palabra]?".
+    ◦ Lógica de Inicio: Comienza en el ítem 5.
+    ◦ Feedback: Los ítems 5 y 6 son de aprendizaje.
+    ◦ Suspensión: Se detiene tras 3 ceros consecutivos.
+    ◦ Uso del LLM: Califica 2 puntos si hay un buen sinónimo o clasificación general, 1 punto si es una respuesta pobre pero correcta, y 0 si es errónea. Si el usuario da una descripción funcional (ej. "es para comer" en lugar de "fruta"), el sistema debe preguntar: "Sí, pero ¿cómo se llama?".
+
+    Instrucciones para el Prompt de Cursor (Lógica del LLM)
+Copia este bloque para guiar a la IA en el desarrollo de la calificación:
+"Configura el módulo de calificación para el ICV (Comprensión Verbal) integrando un LLM con las siguientes directrices:
+1. Comparación Semántica: El LLM debe comparar la transcripción del STT con los ejemplos de 2, 1 y 0 puntos del manual de administración.
+2. Lógica de Consulta (P): Si el LLM detecta que la respuesta es similar a un ejemplo marcado con (P), el sistema NO debe cerrar el ítem. En su lugar, el TTS debe ejecutar la consulta: '¿Qué quiere decir?' y permitir una nueva entrada de audio para ver si el usuario alcanza los 2 puntos.
+3. Prioridad a la mejor respuesta: Si el usuario da varias respuestas en una misma intervención, califica basándote en la de mayor puntaje, siempre que no se haya malogrado la idea original.
+4. No penalización: Indica al LLM que no debe restar puntos por gramática pobre o mala pronunciación, centrándose únicamente en el contenido conceptual.
+
+Ítems Ilustrados (1 al 3)
+En estos ítems, se muestra una imagen en el Cuaderno de Estímulos 2 y se pregunta: "¿Qué es esto?".
+1. Libro.
+2. Avión.
+3. Canasto.
+Ítems Verbales (4 al 30)
+Para estos ítems, se muestra la palabra escrita en el Cuaderno de Estímulos 3 mientras se pregunta: "¿Qué significa [palabra]?". 4.  Cama. 5.  Manzana (Ítem de inicio y aprendizaje). 6.  Terminar (Ítem de aprendizaje). 7.  Guante. 8.  Desayuno. 9.  Estorbar. 10. Íntimo. 11. Ignorante. 12. Curioso. 13. Ordinario. 14. Supremo. 15. Consumir. 16. Fortuito. 17. Cómodo. 18. Improvisar. 19. Escéptico. 20. Expedito. 21. Plagiar. 22. Pertinente. 23. Audaz. 24. Optimizar. 25. Instinto. 26. Bilateral. 27. Cancillería. 28. Paliar. 29. Extraditar. 30. Subrepticio.
+
+--------------------------------------------------------------------------------
+Ejemplos Breves de Calificación (Guía para el LLM)
+Tomemos como ejemplo el Ítem 7: Guante, para ilustrar la diferencia en los niveles de abstracción:
+• 2 Puntos (Entendimiento pleno): La respuesta incluye la categoría y la función específica. Ejemplo: "Es una prenda de vestir para las manos".
+• 1 Punto (Pobreza de contenido): La respuesta es correcta pero vaga o meramente descriptiva. Ejemplo: "Van en las manos". En este caso, el sistema debe activar una consulta (P) para ver si el usuario elabora más.
+• 0 Puntos (Incorrecto o insuficiente): La respuesta no muestra comprensión o es demasiado trivial incluso tras preguntar. Ejemplo: "Para el invierno".
+Reglas Clave para la Implementación Online
+1. Consulta (P): Si el LLM detecta respuestas marcadas con (P) en el manual, el TTS debe preguntar obligatoriamente: "¿Qué quiere decir?" o "Dígame algo más sobre eso".
+2. Suspensión: El test se detiene automáticamente tras 3 puntajes consecutivos de 0.
+3. Retroalimentación: En los ítems 5 y 6, si el usuario no obtiene 2 puntos, el sistema debe leer la definición correcta del manual como parte del aprendizaje de la tarea.
+4. No penalización: El sistema no debe restar puntos por mala gramática o problemas de pronunciación si el significado es claro.
+Analogía: Calificar Vocabulario es como evaluar la resolución de una fotografía. Una respuesta de 0 puntos es una imagen totalmente borrosa donde no se distingue nada; una de 1 punto es una foto pixelada donde ves el objeto pero faltan detalles (por eso pides un zoom con la "Consulta P"); y una de 2 puntos es una imagen en alta definición donde el concepto se ve con total claridad y profundidad.

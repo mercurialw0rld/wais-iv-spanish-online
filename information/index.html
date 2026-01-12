@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WAIS-V Información - Entrenamiento</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Botón Volver -->
+        <a href="../index.html" class="back-button">
+            <span class="back-icon">←</span>
+            <span>Volver al inicio</span>
+        </a>
+
+        <header class="header">
+            <h1>📚 Información</h1>
+            <p>Subprueba de Comprensión Verbal - WAIS-V</p>
+        </header>
+
+        <!-- Sección de Configuración -->
+        <section id="config-section" class="config-section">
+            <div class="config-card">
+                <h2>⚙️ Configuración</h2>
+                
+                <div class="input-group">
+                    <label for="api-key-input">API Key de Gemini</label>
+                    <input type="password" id="api-key-input" placeholder="Ingresa tu API Key de Gemini">
+                    <button id="save-api-key" class="btn btn-secondary">Guardar API Key</button>
+                </div>
+
+                <div class="input-group">
+                    <label for="age-input">Edad del evaluado (16-90 años)</label>
+                    <input type="number" id="age-input" min="16" max="90" placeholder="Ej: 25">
+                </div>
+
+                <div class="api-status" id="api-status">
+                    <span class="status-dot"></span>
+                    <span class="status-text">API Key no configurada</span>
+                </div>
+
+                <button id="start-btn" class="btn btn-primary" disabled>
+                    🎯 Comenzar Test
+                </button>
+            </div>
+        </section>
+
+        <!-- Sección del Test -->
+        <section id="test-section" class="test-section hidden">
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div id="progress-fill" class="progress-fill"></div>
+                </div>
+                <span id="progress-text" class="progress-text">Ítem 3 de 26</span>
+            </div>
+
+            <div class="stimulus-card">
+                <div class="item-badge" id="item-badge">Ítem 3</div>
+                <div class="learning-badge hidden" id="learning-badge">📖 Ítem de Aprendizaje</div>
+                <p id="question-display" class="question-display">Cargando pregunta...</p>
+            </div>
+
+            <div class="response-section">
+                <div class="recording-status" id="recording-status">
+                    <span class="mic-icon">🎤</span>
+                    <span id="status-text">Presiona para grabar</span>
+                </div>
+
+                <button id="record-btn" class="btn btn-record">
+                    <span class="record-icon">🎙️</span>
+                    <span>Grabar Respuesta</span>
+                </button>
+
+                <!-- Input de texto alternativo -->
+                <div id="text-input-container" class="text-input-container hidden">
+                    <p class="text-input-label">O escribe tu respuesta:</p>
+                    <input type="text" id="text-response-input" class="text-response-input" placeholder="Escribe tu respuesta aquí...">
+                    <button id="submit-text-btn" class="btn btn-secondary">Enviar Respuesta</button>
+                </div>
+
+                <div id="transcript-display" class="transcript-display hidden">
+                    <strong>Tu respuesta:</strong>
+                    <p id="transcript-text"></p>
+                </div>
+            </div>
+
+            <div id="feedback-section" class="feedback-section hidden">
+                <div id="feedback-content" class="feedback-content">
+                    <!-- El feedback se insertará aquí -->
+                </div>
+                <div id="auto-advance-notice" class="auto-advance-notice hidden">
+                    Avanzando automáticamente...
+                </div>
+            </div>
+
+            <div class="score-tracker">
+                <div class="current-score">
+                    <span>Puntaje actual:</span>
+                    <strong id="current-score">0</strong>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sección de Resultados -->
+        <section id="results-section" class="results-section hidden">
+            <div class="results-card">
+                <h2>📊 Resultados Finales</h2>
+                
+                <p id="age-group-display" class="age-group-label">Grupo de edad: --</p>
+                
+                <div class="score-display">
+                    <div class="score-item">
+                        <span class="score-label">Puntaje Bruto (PB)</span>
+                        <span id="raw-score" class="score-value">0</span>
+                        <span class="score-max">/ 26</span>
+                    </div>
+                    <div class="score-item highlight">
+                        <span class="score-label">Puntaje Escalar (PE)</span>
+                        <span id="scaled-score" class="score-value scaled">0</span>
+                        <span class="score-max">/ 19</span>
+                    </div>
+                </div>
+
+                <div class="items-summary">
+                    <h3>Resumen por Ítem</h3>
+                    <div id="items-list" class="items-list">
+                        <!-- Los ítems se insertarán aquí -->
+                    </div>
+                </div>
+
+                <button id="restart-btn" class="btn btn-primary">
+                    🔄 Reiniciar Test
+                </button>
+            </div>
+        </section>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
