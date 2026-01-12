@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WAIS-V Entrenamiento - Aritmética</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>WAIS-V Entrenamiento</h1>
+            <h2>Subtest: Aritmética</h2>
+        </header>
+
+        <!-- Panel de Estado -->
+        <section class="status-panel">
+            <div class="status-item">
+                <span class="label">Ítem Actual:</span>
+                <span id="current-item" class="value">--</span>
+            </div>
+            <div class="status-item">
+                <span class="label">Tiempo Restante:</span>
+                <span id="timer" class="value timer">30s</span>
+            </div>
+            <div class="status-item">
+                <span class="label">Puntaje:</span>
+                <span id="score" class="value">0</span>
+            </div>
+            <div class="status-item">
+                <span class="label">Errores Consecutivos:</span>
+                <span id="consecutive-errors" class="value">0</span>
+            </div>
+        </section>
+
+        <!-- Área Principal -->
+        <main class="main-area">
+            <!-- Instrucciones Iniciales -->
+            <div id="instructions-screen" class="screen active">
+                <h3>Instrucciones</h3>
+                <p>Esta es una prueba de aritmética mental. Escucharás problemas matemáticos y deberás responder verbalmente.</p>
+                <ul>
+                    <li>Tienes <strong>30 segundos</strong> por problema</li>
+                    <li>Puedes pedir que se repita el problema <strong>una vez</strong> (el tiempo no se reinicia)</li>
+                    <li>No puedes usar papel ni calculadora</li>
+                    <li>Solo di el número de la respuesta</li>
+                </ul>
+                
+                <!-- Edad del Usuario -->
+                <div class="age-input-container">
+                    <label for="user-age">Tu edad (años):</label>
+                    <input type="number" id="user-age" min="16" max="90" value="25" class="age-input">
+                </div>
+                
+                <button id="btn-start" class="btn btn-primary">
+                    ▶ Iniciar Evaluación
+                </button>
+            </div>
+
+            <!-- Pantalla de Evaluación -->
+            <div id="evaluation-screen" class="screen">
+                <!-- Indicador Visual del Estado -->
+                <div class="evaluation-status">
+                    <div id="status-indicator" class="status-indicator">
+                        <span class="status-text">Preparando...</span>
+                    </div>
+                </div>
+
+                <!-- Área de Respuesta Capturada -->
+                <div class="response-area">
+                    <div class="response-label">Tu respuesta:</div>
+                    <div id="captured-response" class="captured-response">--</div>
+                </div>
+
+                <!-- Controles -->
+                <div class="controls">
+                    <button id="btn-repeat" class="btn btn-secondary" disabled>
+                        🔁 Repetir Problema
+                    </button>
+                    <button id="btn-mic" class="btn btn-mic" disabled>
+                        🎤 Hablar
+                    </button>
+                </div>
+
+                <!-- Feedback -->
+                <div id="feedback" class="feedback hidden"></div>
+            </div>
+
+            <!-- Pantalla de Resultados -->
+            <div id="results-screen" class="screen">
+                <h3>Evaluación Finalizada</h3>
+                <div class="results-container">
+                    <div class="result-item">
+                        <span class="result-label">Puntaje Bruto (Raw Score):</span>
+                        <span id="final-score" class="result-value">0</span>
+                    </div>
+                    <div class="result-item result-item-highlight">
+                        <span class="result-label">Puntaje Escalar (Scaled Score):</span>
+                        <span id="scaled-score" class="result-value scaled">--</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Grupo de Edad:</span>
+                        <span id="age-group" class="result-value">--</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Ítems Completados:</span>
+                        <span id="items-completed" class="result-value">0</span>
+                    </div>
+                </div>
+                <div id="item-log" class="item-log"></div>
+                <button id="btn-restart" class="btn btn-primary">
+                    🔄 Reiniciar Evaluación
+                </button>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Herramienta de entrenamiento - No para uso diagnóstico</p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

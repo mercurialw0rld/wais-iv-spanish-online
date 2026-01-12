@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WAIS-V Entrenamiento - Retención de Dígitos</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Retención de Dígitos</h1>
+            <p class="subtitle">Entrenamiento WAIS-V (basado en normas WAIS-IV)</p>
+        </header>
+
+        <!-- Formulario de Edad (mostrado antes de iniciar) -->
+        <div id="age-form" class="age-form">
+            <h3>Antes de comenzar</h3>
+            <p>Ingresa tu edad para calcular el puntaje escalar según los baremos correspondientes.</p>
+            <div class="age-input-group">
+                <label for="user-age">Edad (años):</label>
+                <input type="number" id="user-age" min="16" max="90" value="25" />
+            </div>
+            <button id="btn-confirm-age" class="btn btn-primary">
+                <span class="icon">✓</span> Confirmar y Continuar
+            </button>
+        </div>
+
+        <!-- Panel de Estado -->
+        <div class="status-panel">
+            <div class="status-item">
+                <span class="label">Modalidad:</span>
+                <span id="current-mode">--</span>
+            </div>
+            <div class="status-item">
+                <span class="label">Ítem:</span>
+                <span id="current-item">--</span>
+            </div>
+            <div class="status-item">
+                <span class="label">Intento:</span>
+                <span id="current-attempt">--</span>
+            </div>
+        </div>
+
+        <!-- Área de Instrucciones -->
+        <div class="instructions-area">
+            <div id="instructions-text" class="instructions-text">
+                Presiona "Iniciar Test" para comenzar la evaluación de Retención de Dígitos.
+            </div>
+        </div>
+
+        <!-- Área de Feedback Visual -->
+        <div class="feedback-area">
+            <div id="digit-display" class="digit-display">--</div>
+            <div id="user-response" class="user-response">Tu respuesta: --</div>
+            <div id="feedback-message" class="feedback-message"></div>
+        </div>
+
+        <!-- Controles -->
+        <div class="controls">
+            <button id="btn-start" class="btn btn-primary">
+                <span class="icon">▶</span> Iniciar Test
+            </button>
+            <button id="btn-listen" class="btn btn-secondary" disabled>
+                <span class="icon">🎤</span> Responder
+            </button>
+            <button id="btn-skip" class="btn btn-danger" disabled>
+                <span class="icon">⏭</span> Saltar
+            </button>
+        </div>
+
+        <!-- Indicador de Estado del Micrófono -->
+        <div id="mic-status" class="mic-status">
+            <div class="mic-indicator"></div>
+            <span>Micrófono inactivo</span>
+        </div>
+
+        <!-- Panel de Puntuación -->
+        <div class="score-panel" id="score-panel" style="display: none;">
+            <h3>Puntuación Actual</h3>
+            <div class="score-grid">
+                <div class="score-item">
+                    <span class="score-label">DOD (Orden Directo)</span>
+                    <span id="score-dod" class="score-value">0/16</span>
+                </div>
+                <div class="score-item">
+                    <span class="score-label">DOI (Orden Inverso)</span>
+                    <span id="score-doi" class="score-value">0/16</span>
+                </div>
+                <div class="score-item">
+                    <span class="score-label">DS (Secuenciación)</span>
+                    <span id="score-ds" class="score-value">0/16</span>
+                </div>
+                <div class="score-item total">
+                    <span class="score-label">TOTAL (Raw Score)</span>
+                    <span id="score-total" class="score-value">0/48</span>
+                </div>
+            </div>
+            <!-- Scaled Score -->
+            <div id="scaled-score-section" class="scaled-score-section" style="display: none;">
+                <h3>Puntaje Escalar (PE)</h3>
+                <div class="scaled-score-display">
+                    <span class="scaled-label">Grupo de edad:</span>
+                    <span id="age-group" class="scaled-value">--</span>
+                </div>
+                <div class="scaled-score-display highlight">
+                    <span class="scaled-label">Puntaje Escalar:</span>
+                    <span id="scaled-score" class="scaled-value large">--</span>
+                </div>
+                <p class="scaled-note">PE: Puntaje Escalar (media=10, DE=3)</p>
+            </div>
+        </div>
+
+        <!-- Log de Debug (opcional) -->
+        <details class="debug-panel">
+            <summary>Debug Log</summary>
+            <div id="debug-log" class="debug-log"></div>
+        </details>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

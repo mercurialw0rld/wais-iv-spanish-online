@@ -1,0 +1,88 @@
+A continuación, detallo las reglas del manual y cómo adaptarlas al entorno online en Cursor para que la simulación sea exacta.
+1. Dinámica de la Prueba según el Manual
+• Punto de Inicio: Para todas las edades (16 a 90 años), se comienza con un ítem de práctica y luego se pasa al ítem 6. Si se sospecha de discapacidad intelectual, se empieza en el ítem 1.
+• Regla de Secuencia Inversa: Si el usuario obtiene 0 puntos en los ítems 6 o 7, se deben administrar los ítems anteriores en orden inverso hasta obtener dos puntajes perfectos consecutivos.
+• Criterio de Suspensión: La prueba se detiene tras 3 fracasos consecutivos (puntajes de 0).
+• Control del Tiempo (Crucial): Cada ítem tiene un límite estricto de 30 segundos. El tiempo empieza a correr justo después de que el examinador termina de decir la última palabra de la instrucción.
+• Regla de Repetición: El usuario puede pedir que se le repita el problema solo una vez por ítem. Importante: Al repetir el ítem, no se debe detener el cronómetro; el tiempo sigue corriendo desde la primera lectura.
+• Prohibición de Apoyos: El evaluado no puede usar lápiz ni papel, pero el manual permite que use los dedos para "escribir" sobre la mesa como apoyo visual.
+2. Adaptación para el entorno Online (Cursor/Javascript)
+Para que tu página en Cursor sea lo más similar posible a un entorno real, debes programar la lógica siguiendo estos lineamientos técnicos:
+A. Gestión de Estímulos Visuales y Auditivos
+• Ítems 1 al 5: Dummy ejercicios.
+• Ítems 6 al 22: Son estrictamente verbales. Al llegar al ítem 6, la UI debe ocultar cualquier imagen o texto del problema para obligar al usuario a procesar la información de forma auditiva, tal como en el test real.
+B. Implementación del TTS y Timing
+• El TTS (Text-to-Speech) debe ser el disparador del cronómetro. Usa el evento onend de la API de síntesis de voz para iniciar el contador de 30 segundos exactamente cuando termine la locución.
+• Si el usuario presiona un botón de "Repetir", el TTS vuelve a leer el problema, pero el código debe asegurar que el contador global del ítem no se reinicie.
+C. Procesamiento de la Respuesta (STT)
+• Calificación: El manual establece que no es necesario que el usuario diga la unidad (por ejemplo, "manzanas" o "pesos"); si el número es correcto, se otorga 1 punto. Tu lógica de Javascript debe comparar solo el valor numérico capturado por el microfono.
+• Respuestas tardías: Si el usuario responde correctamente pero después de los 30 segundos, el sistema debe marcar 0 puntos automáticamente.
+
+tem de Práctica (Obligatorio para iniciar)
+• P: "Luis tiene 6 pelotas de tenis. Si pierde 3, ¿cuántas pelotas le quedan?".
+
+--------------------------------------------------------------------------------
+Ítems Adaptados (1 al 5)
+• Ítem 1: "Si tienes dos manzanas y compras una más, ¿cuántas manzanas tienes en total?" (Invento basado en dificultad de nivel 1).
+• Ítem 2: "Si tienes cinco lápices en una mano y cinco en la otra, ¿cuántos lápices tienes en total?" (Invento basado en dificultad de nivel 2).
+• Ítem 3: "Juan tiene tres pelotas y regala una. ¿Cuántas pelotas le quedan?" (Invento basado en dificultad de nivel 3).
+• Ítem 4: "En una mesa hay cuatro sillas y traen dos sillas más. ¿Cuántas sillas hay ahora en la mesa?" (Invento basado en dificultad de nivel 4).
+• Ítem 5: "Si tienes diez dulces y le das cinco a un amigo, ¿cuántos dulces te quedan?" (Invento basado en dificultad de nivel 5).
+
+--------------------------------------------------------------------------------
+Ítems Originales del Manual (6 al 22)
+• Ítem 6: "Pedro tiene cuatro frazadas. Si compra cuatro más, ¿cuántas frazadas tiene ahora?".
+• Ítem 7: "Mario tiene 9 lápices. Si le da cuatro a Juana, ¿cuántos lápices le quedan a Mario?".
+• Ítem 8: "Álvaro tiene 4 hijos y 20 juguetes. Si cada niño recibe el mismo número de juguetes, ¿cuántos recibe cada uno de ellos?".
+• Ítem 9: "Juan tiene 28 libros. Si vende la mitad de ellos a un local de libros usados y regala otros 9, ¿cuántos libros le quedan?".
+• Ítem 10: "Susana tiene 35 años y Roberto tiene 18 años. ¿Cuántos años mayor es Susana que Roberto?".
+• Ítem 11: "Hay 25 paquetes de chicle en una caja. ¿Cuántos paquetes hay en 8 cajas?".
+• Ítem 12: "Pablo tiene 51 boletos. Si regala 8 boletos a cada uno de sus 6 amigos, ¿cuántos boletos le quedan?".
+• Ítem 13: "Jorge regala 4 cartas a cada uno de sus 8 tíos. Si le quedan solo 6 cartas, ¿cuántas tenía al principio?".
+• Ítem 14: "Andrea corre 22 minutos al día de lunes a viernes. Los sábados corre 30 minutos. ¿Cuántos minutos corre en total?".
+• Ítem 15: "Benjamín vendió dos tercios del número de mapas que vendió Camila. Si Benjamín vendió 400 mapas, ¿cuántos vendió Camila?".
+• Ítem 16: "Si Diego prepara 2 pasteles en 31 minutos, ¿cuánto tiempo le toma preparar 12 pasteles?".
+• Ítem 17: "Cristián pesa el doble que Ricardo. Si Cristián pesa 99 kilos, ¿cuánto pesa Ricardo?".
+• Ítem 18: "Javier trabajó 188 horas en 4 semanas. Si todas las semanas trabajó la misma cantidad de tiempo, ¿cuántas horas trabajó en cada una de ellas?".
+• Ítem 19: "Pamela da, normalmente, 60 vueltas a la pista en su caballo. Si hoy disminuyó la cantidad de vueltas en un 15%, ¿cuántas vueltas dio?".
+• Ítem 20: "Carmen hace una fila detrás de 160 personas. Deja pasar a 20 personas antes que ella. Si 6 personas llegan al primer lugar de la fila cada minuto, ¿cuánto tiempo falta para que Carmen llegue al primer lugar?".
+• Ítem 21: "Si 8 máquinas pueden terminar un trabajo en 6 días, ¿cuántas se necesitan para terminar el trabajo en medio día?".
+• Ítem 22: "Una oficina de correos entrega 20.000 cartas en octubre. En noviembre, la cantidad de cartas entregadas aumenta un 10% y en diciembre aumenta otro 5%. ¿Cuántas cartas se entregaron en diciembre luego de ambos aumentos?".
+Recordatorio para el código: El tiempo límite para cada ítem es de 30 segundos, sin excepción. El cronómetro debe dispararse inmediatamente después de que el TTS termine de leer el problema.
+
+Es fundamental que en tu código de Cursor la validación sea estrictamente numérica, ya que el manual indica que no es necesario que el evaluado diga la unidad (por ejemplo, "manzanas") para que la respuesta sea contada como correcta.
+Respuestas: Ítem de Práctica e Ítems Adaptados (1 al 5)
+Estas respuestas corresponden a los ejercicios triviales que utilizaremos para que la herramienta sea fluida:
+• Ítem de Práctica: Luis tiene 6 pelotas y pierde 3. Respuesta: 3.
+• Ítem 1: Tienes dos manzanas y compras una más. Respuesta: 3.
+• Ítem 2: Tienes cinco lápices en cada mano. Respuesta: 10.
+• Ítem 3: Juan tiene tres pelotas y regala una. Respuesta: 2.
+• Ítem 4: Hay cuatro sillas y traen dos más. Respuesta: 6.
+• Ítem 5: Tienes diez dulces y das cinco. Respuesta: 5.
+Respuestas: Ítems Originales del Manual (6 al 22)
+A partir del ítem 6, los problemas siguen estrictamente la secuencia del WAIS-IV,:
+• Ítem 6: Pedro tiene 4 frazadas y compra 4 más. Respuesta: 8,.
+• Ítem 7: Mario tiene 9 lápices y da 4 a Juana. Respuesta: 5,.
+• Ítem 8: 20 juguetes repartidos entre 4 hijos. Respuesta: 5,.
+• Ítem 9: Juan tiene 28 libros, vende la mitad (14) y regala 9. Respuesta: 5,.
+• Ítem 10: Diferencia de edad entre Susana (35) y Roberto (18). Respuesta: 17,.
+• Ítem 11: 25 paquetes de chicle en 8 cajas. Respuesta: 200,.
+• Ítem 12: 51 boletos menos 8 para cada uno de sus 6 amigos (51 - 48). Respuesta: 3,.
+• Ítem 13: Regala 4 cartas a 8 tíos (32) y le quedan 6. Respuesta: 38,.
+• Ítem 14: Corre 22 min (L-V) y 30 min el sábado (110 + 30). Respuesta: 140,.
+• Ítem 15: Benjamín vendió 400 mapas (2/3 de lo de Camila). Respuesta: 600,.
+• Ítem 16: 2 pasteles en 31 min, tiempo para 12 pasteles (31 x 6). Respuesta: 186,.
+• Ítem 17: Cristián pesa 99 kilos, que es el doble que Ricardo. Respuesta: 49 ½ (o 49.5),.
+• Ítem 18: 188 horas trabajadas en 4 semanas. Respuesta: 47,.
+• Ítem 19: 60 vueltas menos un 15% de disminución (60 - 9). Respuesta: 51,.
+• Ítem 20: Carmen (lugar 181) tras 160 personas y 20 que deja pasar, a 6 por minuto. Respuesta: 30,.
+• Ítem 21: 8 máquinas en 6 días, cuántas para medio día. Respuesta: 96,.
+• Ítem 22: 20,000 cartas + 10% en nov. (22,000) + 5% en dic. (1,100). Respuesta: 23,100,.
+
+--------------------------------------------------------------------------------
+Consideraciones para la programación en Cursor
+1. Margen de Tiempo: Debes programar el sistema para que acepte la respuesta únicamente si se produce dentro de los 30 segundos posteriores al fin del audio (TTS).
+2. Unidades de Medida: En los ítems donde la respuesta es tiempo (como el ítem 20), el manual acepta respuestas alternativas siempre que sean equivalentes (por ejemplo, 1 hora = 60 minutos).
+3. Puntuación: Cada acierto dentro del tiempo límite otorga 1 punto; cualquier respuesta incorrecta o fuera de tiempo otorga 0 puntos.
+4. Criterio de Suspensión: El sistema debe dejar de administrar la prueba automáticamente si el usuario comete 3 errores consecutivos (0 puntos).
+Analogía para el desarrollo: Configurar estas respuestas en tu base de datos es como crear la "llave maestra" de una cerradura; no importa si el usuario usa una mano o la otra para girarla (si dice la unidad o no), lo único que importa es que los "dientes" de la llave (el número) encajen perfectamente en el tiempo exacto para abrir la puerta.

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WAIS-V - Índice de Memoria de Trabajo</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>WAIS-V</h1>
+            <h2>Índice de Memoria de Trabajo (IMT)</h2>
+        </header>
+
+        <!-- Formulario de entrada -->
+        <main class="main-content">
+            <div class="input-section">
+                <h3>Ingresa los Puntajes Escalares</h3>
+                
+                <div class="input-group">
+                    <label for="digit-span">Retención de Dígitos (Digit Span):</label>
+                    <input type="number" id="digit-span" min="1" max="19" placeholder="1-19">
+                </div>
+                
+                <div class="input-group">
+                    <label for="arithmetic">Aritmética:</label>
+                    <input type="number" id="arithmetic" min="1" max="19" placeholder="1-19">
+                </div>
+                
+                <button id="btn-calculate" class="btn btn-primary">
+                    Calcular IMT
+                </button>
+            </div>
+
+            <!-- Resultados -->
+            <div id="results-section" class="results-section hidden">
+                <h3>Resultados</h3>
+                
+                <div class="result-card">
+                    <div class="result-item">
+                        <span class="result-label">Suma de Puntajes Escalares:</span>
+                        <span id="sum-score" class="result-value">--</span>
+                    </div>
+                    
+                    <div class="result-item highlight">
+                        <span class="result-label">IMT (Puntaje Compuesto):</span>
+                        <span id="imt-score" class="result-value large">--</span>
+                    </div>
+                    
+                    <div class="result-item">
+                        <span class="result-label">Rango Percentil:</span>
+                        <span id="percentile" class="result-value">--</span>
+                    </div>
+                    
+                    <div class="result-item">
+                        <span class="result-label">Clasificación:</span>
+                        <span id="classification" class="result-value classification">--</span>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Herramienta de entrenamiento - No para uso diagnóstico</p>
+            <a href="../arithmetic/index.html">← Ir a Aritmética</a>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

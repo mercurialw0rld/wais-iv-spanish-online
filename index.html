@@ -3,95 +3,193 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WAIS-V Entrenamiento - Retención de Dígitos</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>WAIS-V Entrenamiento</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --primary-hover: #1d4ed8;
+            --success-color: #22c55e;
+            --purple-color: #7c3aed;
+            --orange-color: #ea580c;
+            --background: #f8fafc;
+            --surface: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --radius: 16px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            color: white;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .cards-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 30px;
+            text-align: center;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+        }
+
+        .card-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+        }
+
+        .card-icon.arithmetic {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        }
+
+        .card-icon.digit-span {
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+        }
+
+        .card-icon.working-memory {
+            background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
+        }
+
+        .card h2 {
+            font-size: 1.3rem;
+            color: var(--text-primary);
+        }
+
+        .card p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .card-badge {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-subtest {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .badge-index {
+            background: #f3e8ff;
+            color: #6b21a8;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 600px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .cards-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>Retención de Dígitos</h1>
-            <p class="subtitle">Entrenamiento WAIS-V (basado en normas WAIS-IV)</p>
+        <header class="header">
+            <h1>🧠 WAIS-V Entrenamiento</h1>
+            <p>Herramientas de práctica para subtests cognitivos</p>
         </header>
 
-        <!-- Panel de Estado -->
-        <div class="status-panel">
-            <div class="status-item">
-                <span class="label">Modalidad:</span>
-                <span id="current-mode">--</span>
-            </div>
-            <div class="status-item">
-                <span class="label">Ítem:</span>
-                <span id="current-item">--</span>
-            </div>
-            <div class="status-item">
-                <span class="label">Intento:</span>
-                <span id="current-attempt">--</span>
-            </div>
+        <div class="cards-container">
+            <!-- Aritmética -->
+            <a href="arithmetic/index.html" class="card">
+                <div class="card-icon arithmetic">🔢</div>
+                <span class="card-badge badge-subtest">Subtest</span>
+                <h2>Aritmética</h2>
+                <p>Resuelve problemas matemáticos mentalmente con límite de tiempo. Incluye TTS y reconocimiento de voz.</p>
+            </a>
+
+            <!-- Retención de Dígitos -->
+            <a href="digit_span/index.html" class="card">
+                <div class="card-icon digit-span">🔠</div>
+                <span class="card-badge badge-subtest">Subtest</span>
+                <h2>Retención de Dígitos</h2>
+                <p>Practica la repetición de secuencias numéricas en orden directo, inverso y secuencial.</p>
+            </a>
+
+            <!-- Índice de Memoria de Trabajo -->
+            <a href="working_memory/index.html" class="card">
+                <div class="card-icon working-memory">📊</div>
+                <span class="card-badge badge-index">Índice</span>
+                <h2>Memoria de Trabajo (IMT)</h2>
+                <p>Calcula el Índice de Memoria de Trabajo, IQ equivalente y percentil a partir de los puntajes escalares.</p>
+            </a>
         </div>
 
-        <!-- Área de Instrucciones -->
-        <div class="instructions-area">
-            <div id="instructions-text" class="instructions-text">
-                Presiona "Iniciar Test" para comenzar la evaluación de Retención de Dígitos.
-            </div>
-        </div>
-
-        <!-- Área de Feedback Visual -->
-        <div class="feedback-area">
-            <div id="digit-display" class="digit-display">--</div>
-            <div id="user-response" class="user-response">Tu respuesta: --</div>
-            <div id="feedback-message" class="feedback-message"></div>
-        </div>
-
-        <!-- Controles -->
-        <div class="controls">
-            <button id="btn-start" class="btn btn-primary">
-                <span class="icon">▶</span> Iniciar Test
-            </button>
-            <button id="btn-listen" class="btn btn-secondary" disabled>
-                <span class="icon">🎤</span> Responder
-            </button>
-            <button id="btn-skip" class="btn btn-danger" disabled>
-                <span class="icon">⏭</span> Saltar
-            </button>
-        </div>
-
-        <!-- Indicador de Estado del Micrófono -->
-        <div id="mic-status" class="mic-status">
-            <div class="mic-indicator"></div>
-            <span>Micrófono inactivo</span>
-        </div>
-
-        <!-- Panel de Puntuación (oculto por ahora, para futura implementación) -->
-        <div class="score-panel" id="score-panel" style="display: none;">
-            <h3>Puntuación Actual</h3>
-            <div class="score-grid">
-                <div class="score-item">
-                    <span class="score-label">DOD (Orden Directo)</span>
-                    <span id="score-dod" class="score-value">0/16</span>
-                </div>
-                <div class="score-item">
-                    <span class="score-label">DOI (Orden Inverso)</span>
-                    <span id="score-doi" class="score-value">0/16</span>
-                </div>
-                <div class="score-item">
-                    <span class="score-label">DS (Secuenciación)</span>
-                    <span id="score-ds" class="score-value">0/16</span>
-                </div>
-                <div class="score-item total">
-                    <span class="score-label">TOTAL</span>
-                    <span id="score-total" class="score-value">0/48</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Log de Debug (opcional) -->
-        <details class="debug-panel">
-            <summary>Debug Log</summary>
-            <div id="debug-log" class="debug-log"></div>
-        </details>
+        <footer class="footer">
+            <p>Herramienta de entrenamiento - No para uso diagnóstico</p>
+        </footer>
     </div>
-
-    <script src="app.js"></script>
 </body>
 </html>
