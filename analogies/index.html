@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WAIS-V Analogías - Entrenamiento</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Back Button -->
+        <a href="../index.html" class="back-button">← Volver al inicio</a>
+        
+        <!-- Header -->
+        <header class="header">
+            <h1>WAIS-V Analogías</h1>
+            <p class="subtitle">Entrenamiento de Comprensión Verbal</p>
+        </header>
+
+        <!-- API Key Configuration -->
+        <section id="config-section" class="config-section">
+            <div class="config-card">
+                <h2>🔑 Configuración</h2>
+                <p>Ingresa tu API Key de Google Gemini para comenzar</p>
+                <div class="input-group">
+                    <input type="password" id="api-key-input" placeholder="Ingresa tu Gemini API Key">
+                    <button id="save-api-key" class="btn btn-primary">Guardar</button>
+                </div>
+                <p class="hint">Obtén tu API Key en <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a></p>
+            </div>
+        </section>
+
+        <!-- Main Test Section -->
+        <section id="test-section" class="test-section hidden">
+            <!-- Progress Bar -->
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div id="progress-fill" class="progress-fill"></div>
+                </div>
+                <span id="progress-text" class="progress-text">Ítem 0 de 18</span>
+            </div>
+
+            <!-- Stimulus Display -->
+            <div class="stimulus-card">
+                <div id="stimulus-display" class="stimulus-display">
+                    <p class="instruction-text">Presiona "Iniciar" para comenzar la evaluación</p>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="controls">
+                <button id="start-btn" class="btn btn-large btn-primary">
+                    <span class="btn-icon">▶️</span>
+                    <span>Iniciar Evaluación</span>
+                </button>
+                
+                <button id="record-btn" class="btn btn-large btn-record hidden">
+                    <span class="btn-icon">🎤</span>
+                    <span id="record-text">Mantén presionado para responder</span>
+                </button>
+
+                <button id="repeat-btn" class="btn btn-secondary hidden">
+                    <span class="btn-icon">🔄</span>
+                    <span>Repetir pregunta</span>
+                </button>
+            </div>
+
+            <!-- Recording Indicator -->
+            <div id="recording-indicator" class="recording-indicator hidden">
+                <div class="pulse-ring"></div>
+                <span>Escuchando...</span>
+            </div>
+
+            <!-- User Response Display -->
+            <div id="response-display" class="response-display hidden">
+                <h3>Tu respuesta:</h3>
+                <p id="user-response-text"></p>
+            </div>
+
+            <!-- Feedback Section -->
+            <div id="feedback-section" class="feedback-section hidden">
+                <div id="feedback-content" class="feedback-content">
+                    <!-- Feedback will be inserted here -->
+                </div>
+                <button id="next-btn" class="btn btn-primary">
+                    <span>Siguiente ítem</span>
+                    <span class="btn-icon">→</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Results Section -->
+        <section id="results-section" class="results-section hidden">
+            <div class="results-card">
+                <h2>📊 Resultados</h2>
+                <div class="score-display">
+                    <div class="score-item">
+                        <span class="score-label">Puntaje Bruto</span>
+                        <span id="raw-score" class="score-value">0</span>
+                        <span class="score-max">/ 36</span>
+                    </div>
+                </div>
+                <div id="items-breakdown" class="items-breakdown">
+                    <!-- Individual item scores will be shown here -->
+                </div>
+                <button id="restart-btn" class="btn btn-primary">
+                    <span class="btn-icon">🔄</span>
+                    <span>Reiniciar Evaluación</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Status Messages -->
+        <div id="status-message" class="status-message hidden"></div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

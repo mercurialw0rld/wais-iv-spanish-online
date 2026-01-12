@@ -2,6 +2,28 @@
    WAIS-V Arithmetic Training - Styles
    =========================================== */
 
+/* Back Button */
+.back-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: #f1f5f9;
+    color: #475569;
+    text-decoration: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    margin-bottom: 20px;
+}
+
+.back-button:hover {
+    background: #e2e8f0;
+    color: #1e293b;
+    transform: translateX(-3px);
+}
+
 /* Variables CSS */
 :root {
     --primary-color: #2563eb;

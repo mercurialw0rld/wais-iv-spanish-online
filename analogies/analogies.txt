@@ -1,0 +1,67 @@
+l Índice de Comprensión Verbal (ICV) es la medida del WAIS-IV que evalúa la formación de conceptos, el razonamiento verbal y el conocimiento adquirido del entorno. A diferencia del IMT, que es más "operativo", el ICV se centra en la inteligencia cristalizada y la capacidad de expresar ideas con palabras.
+Para implementarlo con éxito en tu página, aquí tienes el detalle de cómo se mide y las sugerencias técnicas para simular el proctoreo real.
+
+--------------------------------------------------------------------------------
+1. ¿Cómo se mide el Índice de Comprensión Verbal?
+El ICV se compone de tres subpruebas centrales y una suplementaria:
+• Analogías (An): El evaluado debe describir la similitud entre dos conceptos (ej. "¿En qué se parecen el dos y el siete?"). Mide formación de conceptos lógicos.
+• Vocabulario (Voc): Consta de ítems ilustrados (nombrar objetos) e ítems verbales (definir palabras que se presentan visual y auditivamente). Es una medida de la reserva cognitiva.
+• Información (In): El evaluado responde preguntas de conocimiento general sobre eventos, personas o lugares.
+• Comprensión (Com) [Suplementaria]: El usuario responde a preguntas sobre principios sociales, situaciones de la vida diaria o refranes.
+Reglas de Oro para el ICV según el Manual:
+1. Sin Límite de Tiempo Estricto: A diferencia de Aritmética, estas pruebas no tienen un cronómetro que anule la respuesta a los 30 segundos. Sin embargo, se recomienda incitar al usuario a responder si pasan 30 segundos sin actividad para mantener el ritmo.
+2. Criterio de Suspensión: Generalmente se detiene la subprueba tras 3 puntajes consecutivos de 0 (excepto en Vocabulario, que a veces requiere ver el punto de inicio).
+3. Puntuación Gradual: Muchas respuestas se califican con 0, 1 o 2 puntos dependiendo de la calidad y abstracción de la respuesta.
+
+. Presentación Visual de Estímulos
+• Vocabulario: Debes mostrar la palabra escrita en la pantalla mientras el TTS la lee. Esto simula el Cuaderno de Estímulos 3, donde el evaluado ve y escucha la palabra al mismo tiempo.
+• Analogías: No se debe usar artículos. El TTS debe decir "¿En qué se parecen nariz y lengua?" y NO "¿En qué se parecen la nariz y la lengua?".
+
+D. Manejo de Respuestas Múltiples o Autocorrecciones
+Si el usuario dice dos cosas, el manual dice que se debe puntuar la mejor respuesta (en ICV) siempre que una no malogre a la otra.
+
+Para implementar el Índice de Comprensión Verbal (ICV) utilizando un LLM para la calificación, es necesario configurar la lógica de proctoreo online siguiendo las reglas de administración, suspensión y consulta (P) del WAIS-IV. A diferencia del IMT, aquí la calidad de la respuesta (nivel de abstracción) es lo que determina el puntaje de 0, 1 o 2 puntos.
+A continuación, detallo cada subtest y cómo implementarlos en tu entorno online:
+1. Analogías (An)
+En esta subprueba, el usuario debe identificar la similitud lógica entre dos conceptos.
+• Implementación Online:
+    ◦ TTS: Debe decir la frase exacta: "¿En qué se parecen [palabra 1] y [palabra 2]?".
+    ◦ Regla Crítica: No debe usar artículos (ej. decir "nariz y lengua", NO "la nariz y la lengua").
+    ◦ Lógica de Inicio: Comienza en el ítem 4. Si el usuario falla el 4 o el 5, se aplica secuencia inversa.
+    ◦ Feedback: Los ítems 4 y 5 son de aprendizaje; si el usuario no da una respuesta de 2 puntos, el sistema debe darle la respuesta correcta para que entienda la lógica.
+    ◦ Suspensión: Se detiene automáticamente tras 3 ceros consecutivos.
+    ◦ Uso del LLM: El LLM debe recibir la respuesta del usuario y compararla con los ejemplos del manual. Si la respuesta es vaga pero apunta a la dirección correcta (ejemplos marcados con (P) en el manual), el sistema debe disparar un audio de consulta: ¿Qué quiere decir? o Dígame algo más sobre eso antes de calificar.
+
+    A continuación, detallo los 18 ítems oficiales y el ítem de práctica extraídos del manual de administración:
+Ítem de Práctica (Obligatorio para iniciar)
+• "¿En qué se parecen el dos y el siete?".
+
+--------------------------------------------------------------------------------
+Ítems de la Subprueba (1 al 18)
+1. Tenedor y cuchara.
+2. Amarillo y verde.
+3. Zanahoria y coliflor.
+4. Caballo y tigre (Ítem de inicio para adultos de 16 a 90 años; ítem de aprendizaje).
+5. Guitarra y tambor (Ítem de aprendizaje).
+6. Bote y automóvil.
+7. Celular y computador.
+8. Poema y escultura.
+9. Brasilia y Montevideo.
+10. Nariz y lengua.
+11. Capullo y bebé.
+12. Comida y gasolina (Nota: En la versión estandarizada en Chile, el manual indica decir "Bencina" en lugar de gasolina).
+13. Ancla y cerco.
+14. Deseo y expectativa.
+15. Permitir y restringir.
+16. Amazonía y Antártica.
+17. Aceptación y negación.
+18. Amigo y enemigo.
+
+--------------------------------------------------------------------------------
+Consideraciones para tu implementación online:
+• Punto de Inicio: Se comienza siempre con el ítem de práctica y luego se salta al ítem 4.
+• Ítems de Aprendizaje (4 y 5): Si el usuario no entrega una respuesta de 2 puntos en estos dos ítems, el sistema (mediante el TTS) debe brindar retroalimentación correctiva indicando la respuesta de 2 puntos para asegurar que comprenda la lógica de abstracción de la tarea.
+• Regla de Repetición: Si el usuario lo solicita, puedes repetir el ítem todas las veces que sea necesario, pero nunca debes alterar el orden de las palabras.
+• Criterio de Suspensión: El test se detiene automáticamente tras 3 puntajes consecutivos de 0.
+• Puntuación Máxima: El puntaje bruto máximo para esta subprueba es de 36 puntos.
+Analogía para el sistema: Imagina que el sistema es un traductor de esencias. No le importa si las palabras suenan bonito; lo que busca es que el usuario identifique el "molde" común (la categoría superior) que une a ambos conceptos. Si el usuario describe solo una parte del objeto (un parecido menor), el sistema le pide profundizar (Consulta P) para ver si logra ver el molde completo.
