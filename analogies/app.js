@@ -153,6 +153,46 @@ function wait(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+/**
+ * Muestra el input de texto como fallback cuando el reconocimiento de voz falla
+ * Permite al usuario escribir su respuesta en lugar de hablar
+ */
+function showTextInputFallback() {
+    // Ocultar botón de grabación
+    toggleElement(elements.recordBtn, false);
+    
+    // Mostrar input de texto
+    const fallbackContainer = document.getElementById('text-input-fallback');
+    const textInput = document.getElementById('text-response-input');
+    const submitBtn = document.getElementById('submit-text-btn');
+    
+    if (fallbackContainer) {
+        toggleElement(fallbackContainer, true);
+        textInput.focus();
+        
+        // Agregar event listeners si no existen
+        if (!submitBtn.hasAttribute('data-listener')) {
+            submitBtn.setAttribute('data-listener', 'true');
+            
+            submitBtn.addEventListener('click', () => {
+                const response = textInput.value.trim();
+                if (response) {
+                    elements.userResponseText.textContent = response;
+                    toggleElement(elements.responseDisplay, true);
+                    textInput.value = '';
+                    handleUserResponse(response);
+                }
+            });
+            
+            textInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    submitBtn.click();
+                }
+            });
+        }
+    }
+}
+
 // ============================================
 // FUNCIONES DE TEXT-TO-SPEECH (TTS)
 // ============================================
@@ -262,7 +302,7 @@ function initializeSpeechRecognition() {
         state.isRecording = true;
         elements.recordBtn.classList.add('recording');
         toggleElement(elements.recordingIndicator, true);
-        elements.recordText.textContent = 'Suelta para enviar';
+        elements.recordText.textContent = 'Detener grabación';
     };
     
     // Evento: fin de grabación
@@ -270,7 +310,7 @@ function initializeSpeechRecognition() {
         state.isRecording = false;
         elements.recordBtn.classList.remove('recording');
         toggleElement(elements.recordingIndicator, false);
-        elements.recordText.textContent = 'Mantén presionado para responder';
+        elements.recordText.textContent = 'Comenzar a grabar';
     };
     
     // Evento: error
@@ -279,11 +319,33 @@ function initializeSpeechRecognition() {
         state.isRecording = false;
         elements.recordBtn.classList.remove('recording');
         toggleElement(elements.recordingIndicator, false);
+        elements.recordText.textContent = 'Comenzar a grabar';
         
-        if (event.error === 'no-speech') {
-            showStatus('No se detectó voz. Intenta de nuevo.', 'info');
-        } else if (event.error === 'not-allowed') {
-            showStatus('Permiso de micrófono denegado', 'error');
+        switch (event.error) {
+            case 'no-speech':
+                showStatus('No se detectó voz. Intenta de nuevo.', 'info');
+                break;
+            case 'not-allowed':
+                showStatus('Permiso de micrófono denegado. Habilita el micrófono en tu navegador.', 'error');
+                break;
+            case 'network':
+                showStatus('Error de red. Asegúrate de tener conexión a internet.', 'error');
+                // Mostrar input de texto como fallback
+                showTextInputFallback();
+                break;
+            case 'aborted':
+                // Usuario canceló, no mostrar error
+                break;
+            case 'audio-capture':
+                showStatus('No se encontró micrófono. Verifica tu dispositivo de audio.', 'error');
+                showTextInputFallback();
+                break;
+            case 'service-not-allowed':
+                showStatus('Servicio de voz no permitido. Usa HTTPS o localhost.', 'error');
+                showTextInputFallback();
+                break;
+            default:
+                showStatus(`Error de reconocimiento: ${event.error}`, 'error');
         }
     };
     
@@ -291,29 +353,31 @@ function initializeSpeechRecognition() {
 }
 
 /**
- * Inicia la grabación de voz
+ * Alterna el estado de grabación (toggle on/off)
+ * Si está grabando, detiene. Si no, inicia.
  */
-function startRecording() {
+function toggleRecording() {
     if (!state.recognition) {
         if (!initializeSpeechRecognition()) return;
     }
     
-    toggleElement(elements.responseDisplay, true);
-    elements.userResponseText.textContent = '...';
-    
-    try {
-        state.recognition.start();
-    } catch (e) {
-        console.error('Error al iniciar grabación:', e);
-    }
-}
-
-/**
- * Detiene la grabación de voz
- */
-function stopRecording() {
-    if (state.recognition && state.isRecording) {
-        state.recognition.stop();
+    if (state.isRecording) {
+        // Detener grabación
+        try {
+            state.recognition.stop();
+        } catch (e) {
+            console.error('Error al detener grabación:', e);
+        }
+    } else {
+        // Iniciar grabación
+        toggleElement(elements.responseDisplay, true);
+        elements.userResponseText.textContent = '...';
+        
+        try {
+            state.recognition.start();
+        } catch (e) {
+            console.error('Error al iniciar grabación:', e);
+        }
     }
 }
 
@@ -581,11 +645,16 @@ async function handleUserResponse(response) {
 
 /**
  * Muestra el feedback de la evaluación al usuario
+ * Avanza automáticamente al siguiente ítem después de mostrar el feedback
  * @param {Object} evaluation - Resultado de la evaluación
  * @param {Object} item - Ítem actual
  */
 async function displayFeedback(evaluation, item) {
     const { score, explanation, idealAnswer } = evaluation;
+    
+    // Tiempo de espera antes de pasar al siguiente ítem (en ms)
+    const AUTO_ADVANCE_DELAY = 2500;
+    const LEARNING_DELAY = 4000; // Más tiempo para ítems de aprendizaje
     
     // Para ítems de práctica, siempre dar retroalimentación
     if (item.isPractice) {
@@ -595,14 +664,16 @@ async function displayFeedback(evaluation, item) {
             <div class="feedback-correct">
                 <strong>Respuesta modelo:</strong> ${idealAnswer}
             </div>
+            <p class="auto-advance-notice">Continuando en unos segundos...</p>
         `;
         
         if (score < 2) {
             await speak(`Una respuesta correcta sería: ${idealAnswer}`, 0.85);
         }
         
-        toggleElement(elements.nextBtn, true);
-        elements.nextBtn.textContent = 'Comenzar evaluación';
+        // Esperar y avanzar automáticamente
+        await wait(LEARNING_DELAY);
+        nextItem();
         return;
     }
     
@@ -614,6 +685,7 @@ async function displayFeedback(evaluation, item) {
             <div class="feedback-correct">
                 <strong>Respuesta de 2 puntos:</strong> ${idealAnswer}
             </div>
+            <p class="auto-advance-notice">Continuando en unos segundos...</p>
         `;
         
         await speak(`Una respuesta de 2 puntos sería: ${idealAnswer}`, 0.85);
@@ -622,6 +694,7 @@ async function displayFeedback(evaluation, item) {
         elements.feedbackContent.innerHTML = `
             <div class="score-badge score-${score}">${score}</div>
             <p class="feedback-text">${explanation}</p>
+            <p class="auto-advance-notice">Continuando en unos segundos...</p>
         `;
     }
     
@@ -637,14 +710,21 @@ async function displayFeedback(evaluation, item) {
     
     // Verificar criterio de suspensión
     if (state.consecutiveZeros >= DISCONTINUE_THRESHOLD) {
-        toggleElement(elements.nextBtn, true);
-        elements.nextBtn.innerHTML = '<span>Ver resultados</span><span class="btn-icon">📊</span>';
+        elements.feedbackContent.innerHTML = `
+            <div class="score-badge score-${score}">${score}</div>
+            <p class="feedback-text">${explanation}</p>
+            <p class="auto-advance-notice">La evaluación ha finalizado. Mostrando resultados...</p>
+        `;
         await speak('La evaluación ha finalizado.', 0.85);
+        await wait(AUTO_ADVANCE_DELAY);
+        showResults();
         return;
     }
     
-    toggleElement(elements.nextBtn, true);
-    elements.nextBtn.innerHTML = '<span>Siguiente ítem</span><span class="btn-icon">→</span>';
+    // Esperar y avanzar automáticamente
+    const delayTime = item.isLearning ? LEARNING_DELAY : AUTO_ADVANCE_DELAY;
+    await wait(delayTime);
+    nextItem();
 }
 
 /**
@@ -783,20 +863,8 @@ function initializeEventListeners() {
     // Iniciar test
     elements.startBtn.addEventListener('click', startTest);
     
-    // Grabación de voz (mantener presionado)
-    elements.recordBtn.addEventListener('mousedown', startRecording);
-    elements.recordBtn.addEventListener('mouseup', stopRecording);
-    elements.recordBtn.addEventListener('mouseleave', stopRecording);
-    
-    // Soporte táctil para móviles
-    elements.recordBtn.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        startRecording();
-    });
-    elements.recordBtn.addEventListener('touchend', (e) => {
-        e.preventDefault();
-        stopRecording();
-    });
+    // Grabación de voz (toggle on/off)
+    elements.recordBtn.addEventListener('click', toggleRecording);
     
     // Repetir pregunta
     elements.repeatBtn.addEventListener('click', repeatQuestion);

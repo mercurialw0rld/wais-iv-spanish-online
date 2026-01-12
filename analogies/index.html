@@ -59,7 +59,7 @@
                 
                 <button id="record-btn" class="btn btn-large btn-record hidden">
                     <span class="btn-icon">🎤</span>
-                    <span id="record-text">Mantén presionado para responder</span>
+                    <span id="record-text">Comenzar a grabar</span>
                 </button>
 
                 <button id="repeat-btn" class="btn btn-secondary hidden">
@@ -80,12 +80,22 @@
                 <p id="user-response-text"></p>
             </div>
 
+            <!-- Text Input Fallback (when speech recognition fails) -->
+            <div id="text-input-fallback" class="text-input-fallback hidden">
+                <p class="fallback-notice">⚠️ El reconocimiento de voz no está disponible. Escribe tu respuesta:</p>
+                <div class="text-input-group">
+                    <input type="text" id="text-response-input" placeholder="Escribe tu respuesta aquí...">
+                    <button id="submit-text-btn" class="btn btn-primary">Enviar</button>
+                </div>
+            </div>
+
             <!-- Feedback Section -->
             <div id="feedback-section" class="feedback-section hidden">
                 <div id="feedback-content" class="feedback-content">
                     <!-- Feedback will be inserted here -->
                 </div>
-                <button id="next-btn" class="btn btn-primary">
+                <!-- Botón oculto, el avance es automático -->
+                <button id="next-btn" class="btn btn-primary hidden">
                     <span>Siguiente ítem</span>
                     <span class="btn-icon">→</span>
                 </button>

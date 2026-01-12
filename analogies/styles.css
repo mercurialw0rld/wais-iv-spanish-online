@@ -426,6 +426,42 @@ body {
     font-style: italic;
 }
 
+/* === Text Input Fallback === */
+.text-input-fallback {
+    background: #fef3c7;
+    border: 2px solid #f59e0b;
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    text-align: center;
+}
+
+.fallback-notice {
+    color: #92400e;
+    font-size: 0.9375rem;
+    margin-bottom: var(--spacing-md);
+}
+
+.text-input-group {
+    display: flex;
+    gap: var(--spacing-sm);
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.text-input-group input {
+    flex: 1;
+    padding: var(--spacing-md);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font-size: 1rem;
+    font-family: inherit;
+}
+
+.text-input-group input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+}
+
 /* === Feedback Section === */
 .feedback-section {
     background: var(--color-surface);
@@ -436,7 +472,20 @@ body {
 }
 
 .feedback-content {
-    margin-bottom: var(--spacing-lg);
+    margin-bottom: var(--spacing-md);
+}
+
+.auto-advance-notice {
+    margin-top: var(--spacing-md);
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    font-style: italic;
+    animation: fadeInOut 1.5s ease-in-out infinite;
+}
+
+@keyframes fadeInOut {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
 }
 
 .score-badge {
