@@ -513,31 +513,58 @@ function initSpeechRecognition() {
         return;
     }
     
+    createRecognitionInstance();
+}
+
+/**
+ * Crea una nueva instancia del reconocedor de voz
+ * Se debe llamar antes de cada sesión de escucha para evitar problemas
+ */
+function createRecognitionInstance() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    if (!SpeechRecognition) return;
+    
     recognition = new SpeechRecognition();
     recognition.lang = CONFIG.STT_LANG;
-    recognition.continuous = false;
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 3;
+    recognition.continuous = true;           // Mantener escuchando
+    recognition.interimResults = true;       // Mostrar resultados intermedios
+    recognition.maxAlternatives = 5;
     
     recognition.onresult = handleSpeechResult;
     recognition.onerror = handleSpeechError;
     recognition.onend = handleSpeechEnd;
+    recognition.onsoundstart = () => {
+        console.log('Sonido detectado');
+    };
+    recognition.onspeechstart = () => {
+        console.log('Habla detectada');
+    };
 }
 
 /**
  * Inicia la escucha del micrófono
  */
 function startListening() {
-    if (!recognition || state.isListening) return;
+    if (state.isListening) return;
+    
+    // Recrear instancia para evitar problemas de estado
+    createRecognitionInstance();
+    
+    if (!recognition) {
+        alert('El reconocimiento de voz no está disponible.');
+        return;
+    }
     
     state.isListening = true;
     const elements = getDOMElements();
     elements.btnMic.classList.add('listening');
     elements.btnMic.textContent = '⏹';
-    updateStatusIndicator('listening', 'Escuchando...');
+    updateStatusIndicator('listening', 'Escuchando... Habla ahora');
     
     try {
         recognition.start();
+        console.log('Reconocimiento de voz iniciado');
     } catch (error) {
         console.error('Error al iniciar reconocimiento:', error);
         stopListening();
@@ -548,17 +575,17 @@ function startListening() {
  * Detiene la escucha del micrófono
  */
 function stopListening() {
-    if (!recognition) return;
-    
     state.isListening = false;
     const elements = getDOMElements();
     elements.btnMic.classList.remove('listening');
     elements.btnMic.textContent = '🎤';
     
-    try {
-        recognition.stop();
-    } catch (error) {
-        // Ignorar error si ya estaba detenido
+    if (recognition) {
+        try {
+            recognition.stop();
+        } catch (error) {
+            // Ignorar error si ya estaba detenido
+        }
     }
 }
 
@@ -567,28 +594,32 @@ function stopListening() {
  * @param {SpeechRecognitionEvent} event - Evento con los resultados
  */
 function handleSpeechResult(event) {
-    const results = event.results[0];
-    const transcript = results[0].transcript;
+    const elements = getDOMElements();
     
-    console.log('Transcripción:', transcript);
+    // Obtener el último resultado
+    const lastResultIndex = event.results.length - 1;
+    const result = event.results[lastResultIndex];
+    const transcript = result[0].transcript.trim();
+    const isFinal = result.isFinal;
+    
+    console.log('Transcripción:', transcript, '| Final:', isFinal);
     
     // Extraer número de la respuesta
     const extractedNumber = extractNumberFromText(transcript);
     
-    const elements = getDOMElements();
-    
+    // Mostrar lo que se está escuchando
     if (extractedNumber !== null) {
         state.capturedResponse = extractedNumber;
         elements.capturedResponse.textContent = extractedNumber;
+        
+        // Si es resultado final y tenemos número, procesar
+        if (isFinal && state.timerStarted) {
+            stopListening();
+            processResponse(extractedNumber);
+        }
     } else {
-        elements.capturedResponse.textContent = `"${transcript}" (no se detectó número)`;
-    }
-    
-    stopListening();
-    
-    // Procesar la respuesta si hay un número válido
-    if (extractedNumber !== null && state.timerStarted) {
-        processResponse(extractedNumber);
+        // Mostrar transcripción parcial
+        elements.capturedResponse.textContent = `"${transcript}"`;
     }
 }
 
@@ -598,12 +629,25 @@ function handleSpeechResult(event) {
  */
 function handleSpeechError(event) {
     console.error('Error de reconocimiento:', event.error);
-    stopListening();
     
+    // No detener si es un error menor que se puede recuperar
     if (event.error === 'no-speech') {
-        updateStatusIndicator('waiting', 'No se detectó voz. Intenta de nuevo.');
+        // Si no hay habla, seguir escuchando (no hacer nada)
+        console.log('No se detectó habla, continuando...');
+        updateStatusIndicator('listening', 'No se detectó voz. Sigue hablando...');
+        return;
+    } else if (event.error === 'aborted') {
+        // Fue abortado intencionalmente
+        return;
     } else if (event.error === 'not-allowed') {
-        alert('Por favor permite el acceso al micrófono para continuar.');
+        stopListening();
+        alert('Por favor permite el acceso al micrófono para continuar. Verifica que estés en HTTPS o localhost.');
+    } else if (event.error === 'network') {
+        stopListening();
+        updateStatusIndicator('waiting', 'Error de red. Intenta de nuevo.');
+    } else {
+        stopListening();
+        updateStatusIndicator('waiting', 'Error de reconocimiento. Intenta de nuevo.');
     }
 }
 
@@ -611,10 +655,26 @@ function handleSpeechError(event) {
  * Maneja el fin del reconocimiento de voz
  */
 function handleSpeechEnd() {
+    console.log('Reconocimiento terminado');
+    
+    // Si todavía debería estar escuchando (continuous mode puede terminar),
+    // reiniciar automáticamente
+    if (state.isListening && state.timerStarted && !state.testEnded) {
+        console.log('Reiniciando reconocimiento...');
+        try {
+            recognition.start();
+        } catch (error) {
+            console.error('Error al reiniciar:', error);
+            stopListening();
+            updateStatusIndicator('waiting', 'Presiona el micrófono para hablar');
+        }
+        return;
+    }
+    
     stopListening();
     
     if (state.timerStarted && !state.testEnded) {
-        updateStatusIndicator('waiting', 'Esperando respuesta...');
+        updateStatusIndicator('waiting', 'Presiona el micrófono para responder');
     }
 }
 
@@ -718,6 +778,11 @@ function startTimer() {
     elements.btnRepeat.disabled = state.hasRepeated;
     
     updateTimerDisplay();
+    
+    // Iniciar escucha automáticamente
+    setTimeout(() => {
+        startListening();
+    }, 300);
     
     state.timerInterval = setInterval(() => {
         state.timeRemaining--;
