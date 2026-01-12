@@ -335,12 +335,6 @@ const synth = window.speechSynthesis;
 /** Reconocimiento de voz (si está disponible) */
 let recognition = null;
 
-/** Timeout para detectar silencio después de habla */
-let silenceTimeoutId = null;
-
-/** Tiempo de silencio antes de dar por terminada la respuesta (ms) */
-const SILENCE_DELAY_MS = 2000;
-
 /**
  * Inicializa el reconocimiento de voz (STT)
  * @returns {boolean} true si el STT está disponible
@@ -355,8 +349,8 @@ function initSpeechRecognition() {
     
     recognition = new SpeechRecognition();
     recognition.lang = CONFIG.LANGUAGE;
-    recognition.continuous = true;        // Mantener escuchando
-    recognition.interimResults = true;    // Resultados intermedios
+    recognition.continuous = false;
+    recognition.interimResults = false;
     recognition.maxAlternatives = 3;
     
     logDebug('STT inicializado correctamente', 'success');
@@ -527,7 +521,6 @@ async function speakInstruction(instruction) {
 
 /**
  * Escucha la respuesta del usuario usando STT
- * Espera 2 segundos de silencio después de detectar habla para dar por terminada la respuesta
  * 
  * @returns {Promise<string>} Promesa con el texto reconocido
  */
@@ -539,100 +532,24 @@ function listenForResponse() {
         }
         
         let timeoutId;
-        let accumulatedText = '';  // Texto acumulado de todos los resultados
-        let hasReceivedSpeech = false;  // Si ya recibimos algo de habla
-        
-        // Limpiar timeout de silencio anterior si existe
-        if (silenceTimeoutId) {
-            clearTimeout(silenceTimeoutId);
-            silenceTimeoutId = null;
-        }
         
         // Configurar indicador visual
         elements.micStatus.classList.add('listening');
         elements.micStatus.querySelector('span').textContent = 'Escuchando...';
         
-        /**
-         * Finaliza la escucha y resuelve con el texto acumulado
-         */
-        const finishListening = () => {
+        recognition.onresult = (event) => {
             clearTimeout(timeoutId);
-            if (silenceTimeoutId) {
-                clearTimeout(silenceTimeoutId);
-                silenceTimeoutId = null;
-            }
-            
-            try {
-                recognition.stop();
-            } catch (e) {
-                // Ignorar si ya estaba detenido
-            }
+            const result = event.results[0][0].transcript;
+            logDebug(`STT resultado: "${result}"`, 'success');
             
             elements.micStatus.classList.remove('listening');
             elements.micStatus.querySelector('span').textContent = 'Micrófono inactivo';
             
-            if (accumulatedText.trim()) {
-                logDebug(`STT resultado final: "${accumulatedText}"`, 'success');
-                resolve(accumulatedText.trim());
-            } else {
-                reject(new Error('No se detectó respuesta'));
-            }
-        };
-        
-        /**
-         * Reinicia el timer de silencio (2 segundos)
-         */
-        const resetSilenceTimer = () => {
-            if (silenceTimeoutId) {
-                clearTimeout(silenceTimeoutId);
-            }
-            
-            silenceTimeoutId = setTimeout(() => {
-                logDebug('2 segundos de silencio detectados, finalizando...', 'info');
-                finishListening();
-            }, SILENCE_DELAY_MS);
-        };
-        
-        recognition.onresult = (event) => {
-            // Construir texto de todos los resultados
-            let fullTranscript = '';
-            for (let i = 0; i < event.results.length; i++) {
-                fullTranscript += event.results[i][0].transcript + ' ';
-            }
-            
-            accumulatedText = fullTranscript.trim();
-            hasReceivedSpeech = true;
-            
-            logDebug(`STT parcial: "${accumulatedText}"`, 'info');
-            
-            // Actualizar indicador visual
-            elements.micStatus.querySelector('span').textContent = `Escuchando: ${accumulatedText}`;
-            
-            // Reiniciar timer de silencio cada vez que recibimos habla
-            resetSilenceTimer();
+            resolve(result);
         };
         
         recognition.onerror = (event) => {
-            // No fallar en errores menores
-            if (event.error === 'no-speech') {
-                logDebug('No se detectó habla, continuando...', 'info');
-                // Si ya teníamos algo, el timer de silencio lo manejará
-                if (!hasReceivedSpeech) {
-                    elements.micStatus.querySelector('span').textContent = 'Escuchando... (habla ahora)';
-                }
-                return;
-            }
-            
-            if (event.error === 'aborted') {
-                return; // Fue abortado intencionalmente
-            }
-            
             clearTimeout(timeoutId);
-            if (silenceTimeoutId) {
-                clearTimeout(silenceTimeoutId);
-                silenceTimeoutId = null;
-            }
-            
             logDebug(`STT error: ${event.error}`, 'error');
             
             elements.micStatus.classList.remove('listening');
@@ -642,30 +559,17 @@ function listenForResponse() {
         };
         
         recognition.onend = () => {
-            // Si el reconocimiento termina pero aún estamos esperando respuesta,
-            // reiniciar si no hemos recibido nada aún
-            if (!hasReceivedSpeech && elements.micStatus.classList.contains('listening')) {
-                logDebug('Reconocimiento terminó, reiniciando...', 'info');
-                try {
-                    recognition.start();
-                } catch (e) {
-                    logDebug('No se pudo reiniciar reconocimiento', 'error');
-                }
-            } else if (hasReceivedSpeech && !silenceTimeoutId) {
-                // Si ya teníamos habla y no hay timer de silencio, finalizar
-                elements.micStatus.classList.remove('listening');
-                elements.micStatus.querySelector('span').textContent = 'Micrófono inactivo';
-            }
+            elements.micStatus.classList.remove('listening');
+            elements.micStatus.querySelector('span').textContent = 'Micrófono inactivo';
         };
         
-        // Timeout global de 30 segundos según manual
+        // Timeout de 30 segundos según manual
         timeoutId = setTimeout(() => {
-            logDebug('Timeout global de 30 segundos', 'info');
-            finishListening();
+            recognition.stop();
+            reject(new Error('Tiempo agotado'));
         }, CONFIG.RESPONSE_TIMEOUT_MS);
         
         recognition.start();
-        logDebug('Escuchando respuesta del usuario...', 'info');
     });
 }
 
