@@ -335,6 +335,9 @@ const synth = window.speechSynthesis;
 /** Reconocimiento de voz (si está disponible) */
 let recognition = null;
 
+/** Flag para evitar múltiples procesamientos */
+let isProcessingResult = false;
+
 /**
  * Inicializa el reconocimiento de voz (STT)
  * @returns {boolean} true si el STT está disponible
@@ -347,14 +350,26 @@ function initSpeechRecognition() {
         return false;
     }
     
-    recognition = new SpeechRecognition();
-    recognition.lang = CONFIG.LANGUAGE;
-    recognition.continuous = false;
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 3;
-    
-    logDebug('STT inicializado correctamente', 'success');
+    logDebug('STT disponible', 'success');
     return true;
+}
+
+/**
+ * Crea una nueva instancia del reconocedor de voz
+ * Debe llamarse antes de cada sesión de escucha para evitar problemas en móviles
+ */
+function createRecognitionInstance() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    if (!SpeechRecognition) return null;
+    
+    const rec = new SpeechRecognition();
+    rec.lang = CONFIG.LANGUAGE;
+    rec.continuous = false;          // Una sola frase
+    rec.interimResults = false;      // Solo resultados finales para evitar duplicados
+    rec.maxAlternatives = 1;         // Solo la mejor alternativa
+    
+    return rec;
 }
 
 /**
@@ -521,103 +536,216 @@ async function speakInstruction(instruction) {
 
 /**
  * Escucha la respuesta del usuario usando STT
+ * Implementación mejorada para móviles
  * 
  * @returns {Promise<string>} Promesa con el texto reconocido
  */
 function listenForResponse() {
     return new Promise((resolve, reject) => {
+        // Crear nueva instancia para evitar problemas de estado en móviles
+        recognition = createRecognitionInstance();
+        
         if (!recognition) {
             reject(new Error('STT no disponible'));
             return;
         }
         
         let timeoutId;
+        let hasResolved = false;
         
-        // Configurar indicador visual
-        elements.micStatus.classList.add('listening');
-        elements.micStatus.querySelector('span').textContent = 'Escuchando...';
-        
-        recognition.onresult = (event) => {
+        // Función para limpiar y resolver (evitar múltiples resoluciones)
+        const cleanup = () => {
             clearTimeout(timeoutId);
-            const result = event.results[0][0].transcript;
-            logDebug(`STT resultado: "${result}"`, 'success');
-            
             elements.micStatus.classList.remove('listening');
             elements.micStatus.querySelector('span').textContent = 'Micrófono inactivo';
             
+            try {
+                recognition.stop();
+            } catch (e) {
+                // Ignorar si ya estaba detenido
+            }
+        };
+        
+        // Configurar indicador visual
+        elements.micStatus.classList.add('listening');
+        elements.micStatus.querySelector('span').textContent = 'Escuchando... Habla ahora';
+        
+        recognition.onresult = (event) => {
+            if (hasResolved) return; // Evitar duplicados
+            hasResolved = true;
+            
+            // Tomar solo el resultado final
+            const lastResultIndex = event.results.length - 1;
+            const result = event.results[lastResultIndex][0].transcript;
+            
+            logDebug(`STT resultado: "${result}"`, 'success');
+            cleanup();
             resolve(result);
         };
         
         recognition.onerror = (event) => {
-            clearTimeout(timeoutId);
+            if (hasResolved) return;
+            
             logDebug(`STT error: ${event.error}`, 'error');
             
-            elements.micStatus.classList.remove('listening');
-            elements.micStatus.querySelector('span').textContent = 'Micrófono inactivo';
+            // En móviles, 'no-speech' puede ocurrir frecuentemente
+            if (event.error === 'no-speech') {
+                // Reintentar automáticamente
+                elements.micStatus.querySelector('span').textContent = 'No se detectó voz. Habla...';
+                try {
+                    recognition.start();
+                } catch (e) {
+                    // Si falla el reinicio, crear nueva instancia
+                    setTimeout(() => {
+                        if (!hasResolved) {
+                            recognition = createRecognitionInstance();
+                            if (recognition) {
+                                recognition.onresult = arguments.callee;
+                                recognition.onerror = arguments.callee;
+                                recognition.start();
+                            }
+                        }
+                    }, 100);
+                }
+                return;
+            }
             
+            if (event.error === 'aborted') {
+                return; // Fue cancelado intencionalmente
+            }
+            
+            hasResolved = true;
+            cleanup();
             reject(new Error(event.error));
         };
         
         recognition.onend = () => {
-            elements.micStatus.classList.remove('listening');
-            elements.micStatus.querySelector('span').textContent = 'Micrófono inactivo';
+            if (!hasResolved) {
+                // Si terminó sin resultado, reintentar
+                elements.micStatus.querySelector('span').textContent = 'Reintentando...';
+                setTimeout(() => {
+                    if (!hasResolved) {
+                        try {
+                            recognition = createRecognitionInstance();
+                            if (recognition) {
+                                setupRecognitionHandlers();
+                                recognition.start();
+                            }
+                        } catch (e) {
+                            logDebug('Error al reiniciar STT', 'error');
+                        }
+                    }
+                }, 200);
+            }
+        };
+        
+        // Función para configurar handlers (para reinicios)
+        const setupRecognitionHandlers = () => {
+            recognition.onresult = (event) => {
+                if (hasResolved) return;
+                hasResolved = true;
+                const lastResultIndex = event.results.length - 1;
+                const result = event.results[lastResultIndex][0].transcript;
+                logDebug(`STT resultado: "${result}"`, 'success');
+                cleanup();
+                resolve(result);
+            };
+            
+            recognition.onerror = (event) => {
+                if (hasResolved) return;
+                if (event.error === 'no-speech' || event.error === 'aborted') return;
+                hasResolved = true;
+                cleanup();
+                reject(new Error(event.error));
+            };
+            
+            recognition.onend = () => {
+                // No hacer nada, el timeout manejará si no hay respuesta
+            };
         };
         
         // Timeout de 30 segundos según manual
         timeoutId = setTimeout(() => {
-            recognition.stop();
-            reject(new Error('Tiempo agotado'));
+            if (!hasResolved) {
+                hasResolved = true;
+                cleanup();
+                reject(new Error('Tiempo agotado'));
+            }
         }, CONFIG.RESPONSE_TIMEOUT_MS);
         
-        recognition.start();
+        // Iniciar reconocimiento
+        try {
+            recognition.start();
+            logDebug('STT iniciado', 'info');
+        } catch (e) {
+            logDebug(`Error al iniciar STT: ${e.message}`, 'error');
+            hasResolved = true;
+            cleanup();
+            reject(e);
+        }
     });
 }
 
 /**
  * Extrae dígitos de un texto reconocido por STT
  * Convierte palabras numéricas a dígitos
+ * Implementación mejorada para evitar duplicados en móviles
  * 
  * @param {string} text - Texto del STT
  * @returns {number[]} Array de dígitos extraídos
  */
 function extractDigitsFromText(text) {
-    // Mapa de palabras a números
+    // Mapa de palabras a números (incluye variaciones comunes)
     const wordToNumber = {
-        'uno': 1, 'una': 1, 'un': 1,
-        'dos': 2,
-        'tres': 3,
-        'cuatro': 4,
-        'cinco': 5,
-        'seis': 6,
-        'siete': 7,
-        'ocho': 8,
-        'nueve': 9,
-        'cero': 0
+        'cero': 0, 'zero': 0, '0': 0,
+        'uno': 1, 'una': 1, 'un': 1, '1': 1,
+        'dos': 2, '2': 2,
+        'tres': 3, '3': 3,
+        'cuatro': 4, '4': 4,
+        'cinco': 5, '5': 5,
+        'seis': 6, '6': 6,
+        'siete': 7, '7': 7,
+        'ocho': 8, '8': 8,
+        'nueve': 9, '9': 9
     };
     
-    const normalized = text.toLowerCase()
-        .replace(/[.,;:!?]/g, ' ')
-        .replace(/\s+/g, ' ')
+    // Normalizar texto
+    let normalized = text.toLowerCase()
+        .replace(/[.,;:!?¿¡]/g, ' ')  // Quitar puntuación
+        .replace(/\s+/g, ' ')          // Normalizar espacios
         .trim();
     
-    const parts = normalized.split(' ');
+    logDebug(`Texto normalizado: "${normalized}"`, 'info');
+    
     const digits = [];
+    const parts = normalized.split(' ');
     
     for (const part of parts) {
-        // Si es un número directo
-        if (/^\d+$/.test(part)) {
-            // Separar cada dígito si son múltiples
+        if (part === '') continue;
+        
+        // Si es una palabra numérica conocida
+        if (wordToNumber.hasOwnProperty(part)) {
+            digits.push(wordToNumber[part]);
+        }
+        // Si es un número directo (ej: "42" -> [4, 2])
+        else if (/^\d+$/.test(part)) {
             for (const char of part) {
                 digits.push(parseInt(char, 10));
             }
         }
-        // Si es una palabra numérica
-        else if (wordToNumber.hasOwnProperty(part)) {
-            digits.push(wordToNumber[part]);
+        // Buscar dígitos dentro de palabras compuestas o mal reconocidas
+        else {
+            // Extraer solo los dígitos si los hay
+            const digitsInPart = part.match(/\d/g);
+            if (digitsInPart) {
+                for (const d of digitsInPart) {
+                    digits.push(parseInt(d, 10));
+                }
+            }
         }
     }
     
-    logDebug(`Dígitos extraídos: ${digits.join('-')}`, 'info');
+    logDebug(`Dígitos extraídos: [${digits.join(', ')}]`, 'info');
     return digits;
 }
 
