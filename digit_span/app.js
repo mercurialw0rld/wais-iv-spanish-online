@@ -383,7 +383,7 @@ function getBestSpanishVoice() {
 
 /**
  * Genera una secuencia aleatoria de dígitos
- * Los dígitos van de 0 a 9
+ * Los dígitos van de 0 a 9 (incluye cero)
  * 
  * @param {number} length - Longitud de la secuencia a generar
  * @returns {number[]} Array de dígitos aleatorios
@@ -519,12 +519,8 @@ async function speakInstruction(instruction) {
 // FUNCIONES DE SPEECH-TO-TEXT (STT)
 // =====================================================
 
-/** Tiempo de indulgencia después de detectar habla (ms) */
-const GRACE_PERIOD_MS = 2000;
-
 /**
  * Escucha la respuesta del usuario usando STT
- * Incluye un tiempo de indulgencia para que el usuario pueda pensar
  * 
  * @returns {Promise<string>} Promesa con el texto reconocido
  */
@@ -536,96 +532,24 @@ function listenForResponse() {
         }
         
         let timeoutId;
-        let graceTimeoutId;
-        let accumulatedText = '';  // Acumular todo lo que dice el usuario
-        let hasReceivedSpeech = false;
-        
-        // Configurar para modo continuo con resultados intermedios
-        recognition.continuous = true;
-        recognition.interimResults = true;
         
         // Configurar indicador visual
         elements.micStatus.classList.add('listening');
         elements.micStatus.querySelector('span').textContent = 'Escuchando...';
         
-        /**
-         * Finaliza la escucha y resuelve con el texto acumulado
-         */
-        const finishListening = () => {
+        recognition.onresult = (event) => {
             clearTimeout(timeoutId);
-            clearTimeout(graceTimeoutId);
-            
-            try {
-                recognition.stop();
-            } catch (e) {
-                // Ignorar si ya está detenido
-            }
+            const result = event.results[0][0].transcript;
+            logDebug(`STT resultado: "${result}"`, 'success');
             
             elements.micStatus.classList.remove('listening');
             elements.micStatus.querySelector('span').textContent = 'Micrófono inactivo';
             
-            if (accumulatedText.trim()) {
-                logDebug(`STT resultado final: "${accumulatedText}"`, 'success');
-                resolve(accumulatedText.trim());
-            } else {
-                reject(new Error('No se detectó respuesta'));
-            }
-        };
-        
-        /**
-         * Reinicia el temporizador de gracia
-         * Se llama cada vez que el usuario dice algo nuevo
-         */
-        const resetGraceTimer = () => {
-            clearTimeout(graceTimeoutId);
-            graceTimeoutId = setTimeout(() => {
-                logDebug('Tiempo de gracia agotado, finalizando...', 'info');
-                finishListening();
-            }, GRACE_PERIOD_MS);
-        };
-        
-        recognition.onresult = (event) => {
-            // Procesar todos los resultados
-            let interimTranscript = '';
-            let finalTranscript = '';
-            
-            for (let i = event.resultIndex; i < event.results.length; i++) {
-                const transcript = event.results[i][0].transcript;
-                if (event.results[i].isFinal) {
-                    finalTranscript += transcript + ' ';
-                } else {
-                    interimTranscript += transcript;
-                }
-            }
-            
-            // Si hay texto final, agregarlo al acumulado
-            if (finalTranscript) {
-                accumulatedText += finalTranscript;
-                hasReceivedSpeech = true;
-                logDebug(`Texto parcial: "${accumulatedText.trim()}"`, 'info');
-            }
-            
-            // Log para debug (sin mostrar visualmente al usuario)
-            const displayText = (accumulatedText + interimTranscript).trim();
-            if (displayText) {
-                logDebug(`Escuchando: "${displayText}"`, 'info');
-            }
-            
-            // Reiniciar timer de gracia cuando hay actividad
-            if (hasReceivedSpeech) {
-                resetGraceTimer();
-            }
+            resolve(result);
         };
         
         recognition.onerror = (event) => {
-            // No detener por no-speech, seguir escuchando
-            if (event.error === 'no-speech') {
-                logDebug('No se detectó habla, continuando...', 'info');
-                return;
-            }
-            
             clearTimeout(timeoutId);
-            clearTimeout(graceTimeoutId);
             logDebug(`STT error: ${event.error}`, 'error');
             
             elements.micStatus.classList.remove('listening');
@@ -635,21 +559,14 @@ function listenForResponse() {
         };
         
         recognition.onend = () => {
-            // Si terminó pero todavía estamos en tiempo, reiniciar
-            if (!hasReceivedSpeech) {
-                try {
-                    recognition.start();
-                    logDebug('Reiniciando reconocimiento...', 'info');
-                } catch (e) {
-                    // Ignorar
-                }
-            }
+            elements.micStatus.classList.remove('listening');
+            elements.micStatus.querySelector('span').textContent = 'Micrófono inactivo';
         };
         
-        // Timeout global de 30 segundos según manual
+        // Timeout de 30 segundos según manual
         timeoutId = setTimeout(() => {
-            logDebug('Timeout global alcanzado', 'info');
-            finishListening();
+            recognition.stop();
+            reject(new Error('Tiempo agotado'));
         }, CONFIG.RESPONSE_TIMEOUT_MS);
         
         recognition.start();
