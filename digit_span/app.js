@@ -357,6 +357,7 @@ function initSpeechRecognition() {
 /**
  * Crea una nueva instancia del reconocedor de voz
  * Debe llamarse antes de cada sesión de escucha para evitar problemas en móviles
+ * Configuración afinada para minimizar errores de transcripción.
  */
 function createRecognitionInstance() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -367,7 +368,12 @@ function createRecognitionInstance() {
     rec.lang = CONFIG.LANGUAGE;
     rec.continuous = false;          // Una sola frase
     rec.interimResults = false;      // Solo resultados finales para evitar duplicados
-    rec.maxAlternatives = 1;         // Solo la mejor alternativa
+    rec.maxAlternatives = 5;         // Evaluaremos varias alternativas para escoger la más coherente
+    try {
+        rec.abort();                 // Asegura estado limpio en móviles antes de usar start()
+    } catch (e) {
+        // En algunos navegadores abort() antes de start() lanza, ignoramos ese caso.
+    }
     
     return rec;
 }
@@ -574,13 +580,11 @@ function listenForResponse() {
             if (hasResolved) return; // Evitar duplicados
             hasResolved = true;
             
-            // Tomar solo el resultado final
-            const lastResultIndex = event.results.length - 1;
-            const result = event.results[lastResultIndex][0].transcript;
+            const { transcript } = selectBestTranscript(event);
             
-            logDebug(`STT resultado: "${result}"`, 'success');
+            logDebug(`STT resultado: "${transcript}"`, 'success');
             cleanup();
-            resolve(result);
+            resolve(transcript);
         };
         
         recognition.onerror = (event) => {
@@ -644,11 +648,10 @@ function listenForResponse() {
             recognition.onresult = (event) => {
                 if (hasResolved) return;
                 hasResolved = true;
-                const lastResultIndex = event.results.length - 1;
-                const result = event.results[lastResultIndex][0].transcript;
-                logDebug(`STT resultado: "${result}"`, 'success');
+                const { transcript } = selectBestTranscript(event);
+                logDebug(`STT resultado: "${transcript}"`, 'success');
                 cleanup();
-                resolve(result);
+                resolve(transcript);
             };
             
             recognition.onerror = (event) => {
@@ -687,34 +690,53 @@ function listenForResponse() {
 }
 
 /**
+ * Normaliza la transcripción para hacerla más robusta a conectores y muletillas.
+ * También elimina repeticiones consecutivas que suelen ser artefactos del STT.
+ * @param {string} text
+ * @returns {string}
+ */
+function normalizeTranscript(text) {
+    const fillers = ['y', 'ee', 'eh', 'este', 'pues', 'mmm'];
+    let normalized = text.toLowerCase()
+        .replace(/[.,;:!?¿¡]/g, ' ')
+        .replace(/-/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    
+    const tokens = normalized.split(' ').filter(Boolean);
+    const cleaned = [];
+    for (const token of tokens) {
+        if (fillers.includes(token)) continue; // descartar conectores comunes
+        // eliminar repeticiones consecutivas exactas (artefacto típico en móviles)
+        if (cleaned.length && cleaned[cleaned.length - 1] === token) continue;
+        cleaned.push(token);
+    }
+    return cleaned.join(' ');
+}
+
+/**
  * Extrae dígitos de un texto reconocido por STT
- * Convierte palabras numéricas a dígitos
- * Implementación mejorada para evitar duplicados en móviles
+ * Convierte palabras numéricas a dígitos y aplica heurísticas anti-duplicados
  * 
  * @param {string} text - Texto del STT
  * @returns {number[]} Array de dígitos extraídos
  */
 function extractDigitsFromText(text) {
-    // Mapa de palabras a números (incluye variaciones comunes)
+    // Mapa de palabras a números (incluye variaciones y errores comunes)
     const wordToNumber = {
-        'cero': 0, 'zero': 0, '0': 0,
+        'cero': 0, 'zero': 0, 'sero': 0, '0': 0,
         'uno': 1, 'una': 1, 'un': 1, '1': 1,
         'dos': 2, '2': 2,
-        'tres': 3, '3': 3,
-        'cuatro': 4, '4': 4,
+        'tres': 3, 'tree': 3, '3': 3,
+        'cuatro': 4, 'quatro': 4, '4': 4,
         'cinco': 5, '5': 5,
         'seis': 6, '6': 6,
-        'siete': 7, '7': 7,
+        'siete': 7, 'sete': 7, '7': 7,
         'ocho': 8, '8': 8,
         'nueve': 9, '9': 9
     };
     
-    // Normalizar texto
-    let normalized = text.toLowerCase()
-        .replace(/[.,;:!?¿¡]/g, ' ')  // Quitar puntuación
-        .replace(/\s+/g, ' ')          // Normalizar espacios
-        .trim();
-    
+    const normalized = normalizeTranscript(text);
     logDebug(`Texto normalizado: "${normalized}"`, 'info');
     
     const digits = [];
@@ -735,7 +757,6 @@ function extractDigitsFromText(text) {
         }
         // Buscar dígitos dentro de palabras compuestas o mal reconocidas
         else {
-            // Extraer solo los dígitos si los hay
             const digitsInPart = part.match(/\d/g);
             if (digitsInPart) {
                 for (const d of digitsInPart) {
@@ -745,8 +766,38 @@ function extractDigitsFromText(text) {
         }
     }
     
-    logDebug(`Dígitos extraídos: [${digits.join(', ')}]`, 'info');
-    return digits;
+    // Heurística anti-duplicado: el generador nunca repite dígitos consecutivos,
+    // así que colapsamos duplicados adyacentes que suelen venir del STT.
+    const deduped = [];
+    for (const d of digits) {
+        if (deduped.length && deduped[deduped.length - 1] === d) continue;
+        deduped.push(d);
+    }
+    
+    logDebug(`Dígitos extraídos: [${deduped.join(', ')}]`, 'info');
+    return deduped;
+}
+
+/**
+ * Selecciona la mejor transcripción de un evento de SpeechRecognition
+ * ponderando confianza y cantidad de dígitos reconocidos.
+ * @param {SpeechRecognitionEvent} event
+ * @returns {{transcript: string, confidence: number}}
+ */
+function selectBestTranscript(event) {
+    const lastIndex = event.results.length - 1;
+    const alternatives = Array.from(event.results[lastIndex]);
+    let best = alternatives[0];
+    let bestScore = -1;
+    for (const alt of alternatives) {
+        const altDigits = extractDigitsFromText(alt.transcript);
+        const score = (alt.confidence || 0) + altDigits.length * 0.05; // pequeño sesgo hacia más dígitos válidos
+        if (score > bestScore) {
+            bestScore = score;
+            best = alt;
+        }
+    }
+    return { transcript: best.transcript, confidence: best.confidence || 0 };
 }
 
 /**

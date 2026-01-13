@@ -149,10 +149,12 @@ const state = {
     consecutiveZeros: 0,
     isTestActive: false,
     isPracticeComplete: false,
+    practiceScore: 0,  // Puntaje obtenido en el ítem de práctica
     isRecording: false,
     isEvaluating: false,
     needsProbe: false,
     probeAttempts: 0,
+    initialResponse: '',
     recognition: null,
     synthesis: window.speechSynthesis
 };
@@ -404,7 +406,8 @@ function initializeSpeechRecognition() {
                 showStatus('No se detectó voz. Intenta de nuevo.', 'info');
                 break;
             case 'not-allowed':
-                showStatus('Permiso de micrófono denegado. Habilita el micrófono en tu navegador.', 'error');
+                showStatus('Permiso de micrófono denegado. Usa el input de texto.', 'error');
+                showTextInputFallback();
                 break;
             case 'network':
                 showStatus('Error de red. Asegúrate de tener conexión a internet.', 'error');
@@ -735,6 +738,9 @@ async function displayFeedback(evaluation, item) {
     
     // Para ítems de práctica
     if (item.isPractice) {
+        // Guardar el puntaje de práctica para determinar si dar puntos automáticos
+        state.practiceScore = score;
+        
         elements.feedbackContent.innerHTML = `
             <div class="score-badge score-${score}">${score}</div>
             <p class="feedback-text">${explanation}</p>
@@ -791,6 +797,14 @@ async function nextItem() {
         state.isPracticeComplete = true;
         state.currentItemIndex = ADULT_START_INDEX;
         elements.nextBtn.innerHTML = '<span>Siguiente ítem</span><span class="btn-icon">→</span>';
+        
+        // Si el usuario obtuvo 2 puntos en la práctica, dar puntos automáticos
+        // por los ítems 1, 2 y 3 (6 puntos total)
+        if (state.practiceScore === 2) {
+            state.scores.push({ itemId: 1, score: 2, automatic: true });
+            state.scores.push({ itemId: 2, score: 2, automatic: true });
+            state.scores.push({ itemId: 3, score: 2, automatic: true });
+        }
     } else {
         state.currentItemIndex++;
     }
@@ -878,9 +892,10 @@ function showResults() {
     // Generar desglose de ítems
     let breakdownHTML = '';
     state.scores.forEach(item => {
+        const autoLabel = item.automatic ? ' <span class="auto-badge">(auto)</span>' : '';
         breakdownHTML += `
-            <div class="item-score pts-${item.score}">
-                <span class="item-num">Ítem ${item.itemId}</span>
+            <div class="item-score pts-${item.score}${item.automatic ? ' automatic' : ''}">
+                <span class="item-num">Ítem ${item.itemId}${autoLabel}</span>
                 <span class="item-pts">${item.score}</span>
             </div>
         `;
@@ -912,6 +927,8 @@ function restartTest() {
     state.scores = [];
     state.consecutiveZeros = 0;
     state.currentItemIndex = 0;
+    state.practiceScore = 0;
+    state.isPracticeComplete = false;
 }
 
 // ============================================

@@ -423,7 +423,8 @@ function initializeSpeechRecognition() {
                 showStatus('No se detectó voz. Intenta de nuevo.', 'info');
                 break;
             case 'not-allowed':
-                showStatus('Permiso de micrófono denegado.', 'error');
+                showStatus('Permiso de micrófono denegado. Usa el input de texto.', 'error');
+                showTextInputFallback();
                 break;
             case 'network':
                 showStatus('Error de red. Usa el input de texto.', 'error');
@@ -638,6 +639,7 @@ async function displayCurrentItem() {
     toggleElement(elements.responseDisplay, false);
     state.needsProbe = false;
     state.probeAttempts = 0;
+    state.initialResponse = '';  // Resetear la respuesta inicial para el nuevo ítem
     
     updateProgress();
     

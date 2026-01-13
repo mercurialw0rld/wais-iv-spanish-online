@@ -677,6 +677,19 @@ body {
     color: var(--color-success);
 }
 
+/* Ítems automáticos (dados por puntaje perfecto en práctica) */
+.item-score.automatic {
+    opacity: 0.85;
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border: 1px dashed var(--color-info);
+}
+
+.auto-badge {
+    font-size: 0.7rem;
+    color: var(--color-info);
+    font-weight: 500;
+}
+
 /* === Status Message === */
 .status-message {
     position: fixed;

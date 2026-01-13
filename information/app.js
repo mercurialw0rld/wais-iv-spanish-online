@@ -834,17 +834,7 @@ async function displayFeedback(result, item) {
     elements.feedbackContent.innerHTML = `
         <div class="score-badge score-${score}">${score}</div>
         <p class="feedback-text">${result.feedback}</p>
-        ${item.isLearning && score === 0 ? `
-            <div class="learning-feedback">
-                📖 Respuesta correcta: ${CORRECT_ANSWERS[item.id]}
-            </div>
-        ` : ''}
     `;
-
-    // Hablar feedback si es ítem de aprendizaje y falló
-    if (item.isLearning && score === 0) {
-        await speak(`La respuesta correcta es: ${CORRECT_ANSWERS[item.id]}`);
-    }
 
     // Lógica de secuencia inversa (solo para ítems 3 y 4)
     if ((item.id === 3 || item.id === 4) && score === 0 && !state.reverseSequenceNeeded) {
