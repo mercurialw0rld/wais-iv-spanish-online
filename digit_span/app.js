@@ -35,6 +35,9 @@ const CONFIG = {
     /** Idioma para TTS y STT */
     LANGUAGE: 'es-ES',
     
+    /** Tiempo de espera después del último dígito detectado antes de procesar (ms) */
+    RESPONSE_DEBOUNCE_MS: 1500,
+    
     /** Longitud de secuencias por ítem (ítem 1 = 2 dígitos, ítem 8 = 9 dígitos) */
     SEQUENCE_LENGTHS: {
         DOD: [2, 3, 4, 5, 6, 7, 8, 9],  // 8 ítems, longitud 2-9
@@ -557,11 +560,14 @@ function listenForResponse() {
         }
         
         let timeoutId;
+        let debounceId;
         let hasResolved = false;
+        let lastTranscript = '';
         
         // Función para limpiar y resolver (evitar múltiples resoluciones)
         const cleanup = () => {
             clearTimeout(timeoutId);
+            clearTimeout(debounceId);
             elements.micStatus.classList.remove('listening');
             elements.micStatus.querySelector('span').textContent = 'Micrófono inactivo';
             
@@ -572,19 +578,46 @@ function listenForResponse() {
             }
         };
         
+        // Función para resolver con debounce
+        const resolveWithDebounce = (transcript) => {
+            if (hasResolved) return;
+            
+            // Actualizar última transcripción
+            lastTranscript = transcript;
+            
+            // Mostrar lo que se está capturando
+            const digits = extractDigitsFromText(transcript);
+            if (digits.length > 0) {
+                elements.micStatus.querySelector('span').textContent = `Capturado: ${digits.join(' - ')} (espera...)`;
+            }
+            
+            // Cancelar debounce anterior
+            clearTimeout(debounceId);
+            
+            // Esperar antes de procesar para dar tiempo a terminar de hablar
+            debounceId = setTimeout(() => {
+                if (hasResolved) return;
+                hasResolved = true;
+                logDebug(`STT resultado final: "${lastTranscript}"`, 'success');
+                cleanup();
+                resolve(lastTranscript);
+            }, CONFIG.RESPONSE_DEBOUNCE_MS);
+        };
+        
         // Configurar indicador visual
         elements.micStatus.classList.add('listening');
         elements.micStatus.querySelector('span').textContent = 'Escuchando... Habla ahora';
         
         recognition.onresult = (event) => {
             if (hasResolved) return; // Evitar duplicados
-            hasResolved = true;
             
             const { transcript } = selectBestTranscript(event);
+            const isFinal = event.results[event.results.length - 1].isFinal;
             
-            logDebug(`STT resultado: "${transcript}"`, 'success');
-            cleanup();
-            resolve(transcript);
+            logDebug(`STT parcial: "${transcript}" | Final: ${isFinal}`, 'info');
+            
+            // Usar debounce para esperar a que termine de hablar
+            resolveWithDebounce(transcript);
         };
         
         recognition.onerror = (event) => {
@@ -647,11 +680,9 @@ function listenForResponse() {
         const setupRecognitionHandlers = () => {
             recognition.onresult = (event) => {
                 if (hasResolved) return;
-                hasResolved = true;
                 const { transcript } = selectBestTranscript(event);
-                logDebug(`STT resultado: "${transcript}"`, 'success');
-                cleanup();
-                resolve(transcript);
+                logDebug(`STT parcial (reinicio): "${transcript}"`, 'info');
+                resolveWithDebounce(transcript);
             };
             
             recognition.onerror = (event) => {

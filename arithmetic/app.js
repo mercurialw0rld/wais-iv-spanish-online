@@ -26,140 +26,140 @@
 const ITEMS_DATABASE = {
     practice: {
         id: 'practice',
-        text: 'Luis tiene 6 pelotas de tenis. Si pierde 3, ¿cuántas pelotas le quedan?',
+        text: 'María tiene 8 globos. Si se le escapan 5, ¿cuántos globos le quedan?',
         answer: 3,
         alternativeAnswers: []
     },
     1: {
         id: 1,
-        text: 'Si tienes dos manzanas y compras una más, ¿cuántas manzanas tienes en total?',
-        answer: 3,
+        text: 'Si tienes tres naranjas y compras dos más, ¿cuántas naranjas tienes en total?',
+        answer: 5,
         alternativeAnswers: []
     },
     2: {
         id: 2,
-        text: 'Si tienes cinco lápices en una mano y cinco en la otra, ¿cuántos lápices tienes en total?',
+        text: 'Si tienes cuatro monedas en un bolsillo y seis en el otro, ¿cuántas monedas tienes en total?',
         answer: 10,
         alternativeAnswers: []
     },
     3: {
         id: 3,
-        text: 'Juan tiene tres pelotas y regala una. ¿Cuántas pelotas le quedan?',
-        answer: 2,
+        text: 'Ana tiene cinco galletas y come dos. ¿Cuántas galletas le quedan?',
+        answer: 3,
         alternativeAnswers: []
     },
     4: {
         id: 4,
-        text: 'En una mesa hay cuatro sillas y traen dos sillas más. ¿Cuántas sillas hay ahora en la mesa?',
-        answer: 6,
+        text: 'En un estante hay tres libros y ponen cuatro libros más. ¿Cuántos libros hay ahora en el estante?',
+        answer: 7,
         alternativeAnswers: []
     },
     5: {
         id: 5,
-        text: 'Si tienes diez dulces y le das cinco a un amigo, ¿cuántos dulces te quedan?',
-        answer: 5,
+        text: 'Si tienes doce caramelos y regalas seis a un amigo, ¿cuántos caramelos te quedan?',
+        answer: 6,
         alternativeAnswers: []
     },
     6: {
         id: 6,
-        text: 'Pedro tiene cuatro frazadas. Si compra cuatro más, ¿cuántas frazadas tiene ahora?',
+        text: 'Elena tiene cinco camisetas. Si compra tres más, ¿cuántas camisetas tiene ahora?',
         answer: 8,
         alternativeAnswers: []
     },
     7: {
         id: 7,
-        text: 'Mario tiene 9 lápices. Si le da cuatro a Juana, ¿cuántos lápices le quedan a Mario?',
+        text: 'Carlos tiene 11 cromos. Si le da seis a su hermano, ¿cuántos cromos le quedan a Carlos?',
         answer: 5,
         alternativeAnswers: []
     },
     8: {
         id: 8,
-        text: 'Álvaro tiene 4 hijos y 20 juguetes. Si cada niño recibe el mismo número de juguetes, ¿cuántos recibe cada uno de ellos?',
-        answer: 5,
+        text: 'Teresa tiene 3 amigas y 18 chocolates. Si reparte los chocolates en partes iguales entre sus amigas, ¿cuántos recibe cada una?',
+        answer: 6,
         alternativeAnswers: []
     },
     9: {
         id: 9,
-        text: 'Juan tiene 28 libros. Si vende la mitad de ellos a un local de libros usados y regala otros 9, ¿cuántos libros le quedan?',
-        answer: 5,
+        text: 'Pablo tiene 32 estampillas. Si regala la mitad a su primo y pierde otras 8, ¿cuántas estampillas le quedan?',
+        answer: 8,
         alternativeAnswers: []
     },
     10: {
         id: 10,
-        text: 'Susana tiene 35 años y Roberto tiene 18 años. ¿Cuántos años mayor es Susana que Roberto?',
-        answer: 17,
+        text: 'Marta tiene 42 años y su hijo tiene 19 años. ¿Cuántos años mayor es Marta que su hijo?',
+        answer: 23,
         alternativeAnswers: []
     },
     11: {
         id: 11,
-        text: 'Hay 25 paquetes de chicle en una caja. ¿Cuántos paquetes hay en 8 cajas?',
-        answer: 200,
+        text: 'Hay 15 galletas en cada paquete. ¿Cuántas galletas hay en 9 paquetes?',
+        answer: 135,
         alternativeAnswers: []
     },
     12: {
         id: 12,
-        text: 'Pablo tiene 51 boletos. Si regala 8 boletos a cada uno de sus 6 amigos, ¿cuántos boletos le quedan?',
-        answer: 3,
+        text: 'Lucía tiene 47 calcomanías. Si regala 7 calcomanías a cada uno de sus 5 primos, ¿cuántas calcomanías le quedan?',
+        answer: 12,
         alternativeAnswers: []
     },
     13: {
         id: 13,
-        text: 'Jorge regala 4 cartas a cada uno de sus 8 tíos. Si le quedan solo 6 cartas, ¿cuántas tenía al principio?',
-        answer: 38,
+        text: 'Sofía reparte 5 lápices a cada uno de sus 7 compañeros. Si le quedan solo 4 lápices, ¿cuántos tenía al principio?',
+        answer: 39,
         alternativeAnswers: []
     },
     14: {
         id: 14,
-        text: 'Andrea corre 22 minutos al día de lunes a viernes. Los sábados corre 30 minutos. ¿Cuántos minutos corre en total?',
-        answer: 140,
+        text: 'Tomás estudia 25 minutos al día de lunes a viernes. Los domingos estudia 45 minutos. ¿Cuántos minutos estudia en total?',
+        answer: 170,
         alternativeAnswers: []
     },
     15: {
         id: 15,
-        text: 'Benjamín vendió dos tercios del número de mapas que vendió Camila. Si Benjamín vendió 400 mapas, ¿cuántos vendió Camila?',
-        answer: 600,
+        text: 'Laura leyó tres cuartos del número de páginas que leyó Miguel. Si Laura leyó 300 páginas, ¿cuántas leyó Miguel?',
+        answer: 400,
         alternativeAnswers: []
     },
     16: {
         id: 16,
-        text: 'Si Diego prepara 2 pasteles en 31 minutos, ¿cuánto tiempo le toma preparar 12 pasteles?',
-        answer: 186,
+        text: 'Si Andrés arma 3 rompecabezas en 42 minutos, ¿cuánto tiempo le toma armar 14 rompecabezas?',
+        answer: 196,
         alternativeAnswers: []
     },
     17: {
         id: 17,
-        text: 'Cristián pesa el doble que Ricardo. Si Cristián pesa 99 kilos, ¿cuánto pesa Ricardo?',
-        answer: 49.5,
-        alternativeAnswers: [49, 50] // Aceptar redondeos cercanos
+        text: 'Fernanda pesa el doble que su hermana. Si Fernanda pesa 87 kilos, ¿cuánto pesa su hermana?',
+        answer: 43.5,
+        alternativeAnswers: [43, 44] // Aceptar redondeos cercanos
     },
     18: {
         id: 18,
-        text: 'Javier trabajó 188 horas en 4 semanas. Si todas las semanas trabajó la misma cantidad de tiempo, ¿cuántas horas trabajó en cada una de ellas?',
-        answer: 47,
+        text: 'Daniela recorrió 156 kilómetros en 3 días. Si todos los días recorrió la misma distancia, ¿cuántos kilómetros recorrió cada día?',
+        answer: 52,
         alternativeAnswers: []
     },
     19: {
         id: 19,
-        text: 'Pamela da, normalmente, 60 vueltas a la pista en su caballo. Si hoy disminuyó la cantidad de vueltas en un 15%, ¿cuántas vueltas dio?',
-        answer: 51,
+        text: 'Roberto normalmente hace 80 flexiones en su entrenamiento. Si hoy redujo la cantidad en un 25%, ¿cuántas flexiones hizo?',
+        answer: 60,
         alternativeAnswers: []
     },
     20: {
         id: 20,
-        text: 'Carmen hace una fila detrás de 160 personas. Deja pasar a 20 personas antes que ella. Si 6 personas llegan al primer lugar de la fila cada minuto, ¿cuánto tiempo falta para que Carmen llegue al primer lugar?',
+        text: 'Adriana está en una fila detrás de 140 personas. Deja pasar a 10 personas delante de ella. Si atienden a 5 personas por minuto, ¿cuántos minutos faltan para que Adriana sea atendida?',
         answer: 30,
         alternativeAnswers: []
     },
     21: {
         id: 21,
-        text: 'Si 8 máquinas pueden terminar un trabajo en 6 días, ¿cuántas se necesitan para terminar el trabajo en medio día?',
+        text: 'Si 6 obreros pueden construir un muro en 8 días, ¿cuántos obreros se necesitan para construirlo en medio día?',
         answer: 96,
         alternativeAnswers: []
     },
     22: {
         id: 22,
-        text: 'Una oficina de correos entrega 20.000 cartas en octubre. En noviembre, la cantidad de cartas entregadas aumenta un 10% y en diciembre aumenta otro 5%. ¿Cuántas cartas se entregaron en diciembre luego de ambos aumentos?',
-        answer: 23100,
+        text: 'Una tienda vendió 15.000 productos en enero. En febrero las ventas aumentaron un 20% y en marzo aumentaron otro 10%. ¿Cuántos productos se vendieron en marzo luego de ambos aumentos?',
+        answer: 19800,
         alternativeAnswers: []
     }
 };
