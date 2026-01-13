@@ -503,7 +503,7 @@ function loadVoices() {
 let recognition = null;
 
 /**
- * Normaliza la transcripción para mejorar la extracción numérica.
+ * Normaliza la transcripción para mejorar extracción numérica.
  * - Elimina muletillas/conectores.
  * - Colapsa repeticiones consecutivas (artefactos de STT).
  * - Unifica separadores decimales "coma"/"punto".
@@ -511,12 +511,13 @@ let recognition = null;
  * @returns {string}
  */
 function normalizeTranscript(text) {
-    const fillers = ['y', 'ee', 'eh', 'este', 'pues', 'mmm', 'ajá'];
+    const fillers = ['y', 'ee', 'eh', 'este', 'pues', 'mmm', 'ajá', 'aja'];
     let normalized = text.toLowerCase()
         .replace(/[¿?¡!,:;]/g, ' ')
         .replace(/-/g, ' ')
         .replace(/\s+/g, ' ')
         .trim();
+    // Convertir "coma" y "punto" a separador decimal
     normalized = normalized.replace(/\bcoma\b|\bpunto\b/g, '.');
     const tokens = normalized.split(' ').filter(Boolean);
     const cleaned = [];
@@ -569,14 +570,14 @@ function parseSpanishNumber(tokens) {
             total += (current || 1) * 1000;
             current = 0;
         } else {
-            return null; // token desconocido rompe el parseo
+            return null; // token desconocido
         }
     }
     return total + current;
 }
 
 /**
- * Extrae todos los números posibles de un texto (en dígitos o palabras) incluyendo decimales con "coma"/"punto".
+ * Extrae todos los números posibles de un texto (en dígitos o palabras) incluyendo decimales.
  * @param {string} text
  * @returns {number[]}
  */
@@ -624,7 +625,7 @@ function extractNumbersFromTranscript(text) {
 }
 
 /**
- * Selecciona la mejor alternativa de SpeechRecognition ponderando confianza y cantidad de números válidos.
+ * Selecciona la mejor alternativa de SpeechRecognition ponderando confianza y cantidad de números.
  * @param {SpeechRecognitionEvent} event
  * @returns {{transcript: string, confidence: number}}
  */
@@ -757,6 +758,7 @@ function handleSpeechResult(event) {
     console.log('Transcripción:', transcript, '| Final:', isFinal, '| Candidatos:', candidates);
     
     if (candidates.length > 0) {
+        // Solo preguntar por múltiples respuestas cuando es resultado final
         const numberToUse = candidates.length === 1
             ? candidates[0]
             : (isFinal ? resolveMultipleResponses(candidates) : candidates[0]);
@@ -838,6 +840,7 @@ function handleSpeechEnd() {
  * @returns {number|null} Número extraído o null si no se encuentra
  */
 function extractNumberFromText(text) {
+    // Usar el nuevo extractor mejorado
     const nums = extractNumbersFromTranscript(text);
     return nums.length ? nums[0] : null;
 }
@@ -1101,16 +1104,6 @@ function validateResponse(response, item) {
 }
 
 /**
- * Retroalimentación correctiva para ítems de aprendizaje (1 y 2).
- * @param {Object} item
- */
-function provideLearningFeedback(item) {
-    const message = `La respuesta correcta es ${item.answer}.`; // mensaje breve y claro
-    showFeedback('incorrect', `✗ Incorrecto - ${message}`);
-    speak(message).catch(() => {});
-}
-
-/**
  * Registra el resultado de un ítem
  * @param {string|number} itemId - ID del ítem
  * @param {number|null} response - Respuesta dada
@@ -1127,7 +1120,7 @@ function recordItemResult(itemId, response, correct, options = {}) {
 }
 
 /**
- * Aplica crédito automático a ítems 1-5 cuando 6 y 7 fueron correctos en primera administración.
+ * Aplica crédito automático a ítems 1-5 cuando 6 y 7 fueron correctos.
  */
 function applyAutoCreditIfEligible() {
     if (state.autoCreditApplied) return;
@@ -1143,7 +1136,18 @@ function applyAutoCreditIfEligible() {
         state.score += 5;
         const elements = getDOMElements();
         elements.scoreDisplay.textContent = state.score;
+        console.log('Crédito automático aplicado: +5 puntos (ítems 1-5)');
     }
+}
+
+/**
+ * Retroalimentación correctiva para ítems de aprendizaje (1 y 2).
+ * @param {Object} item
+ */
+function provideLearningFeedback(item) {
+    const message = `La respuesta correcta es ${item.answer}.`;
+    showFeedback('incorrect', `✗ Incorrecto - ${message}`);
+    speak(message).catch(() => {});
 }
 
 /**
