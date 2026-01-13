@@ -387,7 +387,8 @@ const state = {
     reverseSequenceNeeded: false,   // Si se necesita secuencia inversa
     perfectScoresInReverse: 0,      // Puntajes perfectos consecutivos en reversa
     capturedResponse: null,         // Respuesta capturada por STT
-    userAge: 25                     // Edad del usuario en años
+    userAge: 25,                    // Edad del usuario en años
+    autoCreditApplied: false        // Si ya se otorgó crédito automático de ítems 1-5
 };
 
 // ============================================================================
@@ -502,6 +503,160 @@ function loadVoices() {
 let recognition = null;
 
 /**
+ * Normaliza la transcripción para mejorar la extracción numérica.
+ * - Elimina muletillas/conectores.
+ * - Colapsa repeticiones consecutivas (artefactos de STT).
+ * - Unifica separadores decimales "coma"/"punto".
+ * @param {string} text
+ * @returns {string}
+ */
+function normalizeTranscript(text) {
+    const fillers = ['y', 'ee', 'eh', 'este', 'pues', 'mmm', 'ajá'];
+    let normalized = text.toLowerCase()
+        .replace(/[¿?¡!,:;]/g, ' ')
+        .replace(/-/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    normalized = normalized.replace(/\bcoma\b|\bpunto\b/g, '.');
+    const tokens = normalized.split(' ').filter(Boolean);
+    const cleaned = [];
+    for (const token of tokens) {
+        if (fillers.includes(token)) continue;
+        if (cleaned.length && cleaned[cleaned.length - 1] === token) continue;
+        cleaned.push(token);
+    }
+    return cleaned.join(' ');
+}
+
+/**
+ * Convierte palabras numéricas en español a valor numérico (hasta miles).
+ * @param {string[]} tokens
+ * @returns {number|null}
+ */
+function parseSpanishNumber(tokens) {
+    const units = {
+        'cero': 0, 'uno': 1, 'una': 1, 'dos': 2, 'tres': 3, 'cuatro': 4,
+        'cinco': 5, 'seis': 6, 'siete': 7, 'ocho': 8, 'nueve': 9,
+        'diez': 10, 'once': 11, 'doce': 12, 'trece': 13, 'catorce': 14,
+        'quince': 15, 'dieciséis': 16, 'dieciseis': 16, 'diecisiete': 17,
+        'dieciocho': 18, 'diecinueve': 19
+    };
+    const tens = {
+        'veinte': 20, 'veintiuno': 21, 'veintiuna': 21, 'veintidós': 22, 'veintidos': 22,
+        'veintitrés': 23, 'veintitres': 23, 'veinticuatro': 24, 'veinticinco': 25,
+        'veintiséis': 26, 'veintiseis': 26, 'veintisiete': 27, 'veintiocho': 28, 'veintinueve': 29,
+        'treinta': 30, 'cuarenta': 40, 'cincuenta': 50, 'sesenta': 60,
+        'setenta': 70, 'ochenta': 80, 'noventa': 90
+    };
+    const hundreds = {
+        'cien': 100, 'ciento': 100, 'doscientos': 200, 'doscientas': 200,
+        'trescientos': 300, 'trescientas': 300, 'cuatrocientos': 400, 'cuatrocientas': 400,
+        'quinientos': 500, 'quinientas': 500, 'seiscientos': 600, 'seiscientas': 600,
+        'setecientos': 700, 'setecientas': 700, 'ochocientos': 800, 'ochocientas': 800,
+        'novecientos': 900, 'novecientas': 900
+    };
+    let total = 0;
+    let current = 0;
+    for (const token of tokens) {
+        if (token === 'y') continue;
+        if (units.hasOwnProperty(token)) {
+            current += units[token];
+        } else if (tens.hasOwnProperty(token)) {
+            current += tens[token];
+        } else if (hundreds.hasOwnProperty(token)) {
+            current += hundreds[token];
+        } else if (token === 'mil') {
+            total += (current || 1) * 1000;
+            current = 0;
+        } else {
+            return null; // token desconocido rompe el parseo
+        }
+    }
+    return total + current;
+}
+
+/**
+ * Extrae todos los números posibles de un texto (en dígitos o palabras) incluyendo decimales con "coma"/"punto".
+ * @param {string} text
+ * @returns {number[]}
+ */
+function extractNumbersFromTranscript(text) {
+    const normalized = normalizeTranscript(text);
+    const numbers = [];
+    
+    // 1) Números en dígitos (con . o , como decimal)
+    const digitMatches = normalized.match(/-?\d+(?:[.,]\d+)?/g);
+    if (digitMatches) {
+        for (const match of digitMatches) {
+            const value = parseFloat(match.replace(',', '.'));
+            if (!Number.isNaN(value)) numbers.push(value);
+        }
+    }
+    
+    // 2) Decimales con palabras: "X . Y"
+    const decimalWordMatch = normalized.match(/([\w\s]+)\.([\w\s]+)/);
+    if (decimalWordMatch) {
+        const leftTokens = decimalWordMatch[1].trim().split(' ').filter(Boolean);
+        const rightTokens = decimalWordMatch[2].trim().split(' ').filter(Boolean);
+        const left = parseSpanishNumber(leftTokens) ?? parseFloat(leftTokens.join(''));
+        const rightNumeric = parseSpanishNumber(rightTokens);
+        const rightDigitsStr = rightNumeric !== null ? rightNumeric.toString() : rightTokens.join('');
+        if (left !== null && rightDigitsStr !== '') {
+            const fraction = rightDigitsStr.replace(/\s+/g, '');
+            const value = parseFloat(`${left}.${fraction}`);
+            if (!Number.isNaN(value)) numbers.push(value);
+        }
+    }
+    
+    // 3) Números solo en palabras
+    if (numbers.length === 0) {
+        const wordTokens = normalized.split(' ').filter(Boolean);
+        const value = parseSpanishNumber(wordTokens);
+        if (value !== null) numbers.push(value);
+    }
+    
+    // Deduplicar preservando orden
+    const deduped = [];
+    for (const n of numbers) {
+        if (!deduped.some(x => Math.abs(x - n) < 0.0001)) deduped.push(n);
+    }
+    return deduped;
+}
+
+/**
+ * Selecciona la mejor alternativa de SpeechRecognition ponderando confianza y cantidad de números válidos.
+ * @param {SpeechRecognitionEvent} event
+ * @returns {{transcript: string, confidence: number}}
+ */
+function selectBestTranscript(event) {
+    const lastIndex = event.results.length - 1;
+    const alternatives = Array.from(event.results[lastIndex]);
+    let best = alternatives[0];
+    let bestScore = -1;
+    for (const alt of alternatives) {
+        const nums = extractNumbersFromTranscript(alt.transcript);
+        const score = (alt.confidence || 0) + nums.length * 0.05;
+        if (score > bestScore) {
+            bestScore = score;
+            best = alt;
+        }
+    }
+    return { transcript: best.transcript.trim(), confidence: best.confidence || 0 };
+}
+
+/**
+ * Si hay múltiples números en la transcripción, pide al usuario cuál es la respuesta correcta.
+ * @param {number[]} numbers
+ * @returns {number|null}
+ */
+function resolveMultipleResponses(numbers) {
+    if (numbers.length <= 1) return numbers[0] ?? null;
+    const [first, second] = numbers;
+    const message = `Usted dijo ${first} y también dijo ${second}. ¿Cuál es la correcta?\nPulsa Aceptar para ${first} o Cancelar para ${second}.`;
+    return window.confirm(message) ? first : second;
+}
+
+/**
  * Inicializa el reconocedor de voz
  */
 function initSpeechRecognition() {
@@ -595,30 +750,28 @@ function stopListening() {
  */
 function handleSpeechResult(event) {
     const elements = getDOMElements();
+    const { transcript } = selectBestTranscript(event);
+    const isFinal = event.results[event.results.length - 1].isFinal;
+    const candidates = extractNumbersFromTranscript(transcript);
     
-    // Obtener el último resultado
-    const lastResultIndex = event.results.length - 1;
-    const result = event.results[lastResultIndex];
-    const transcript = result[0].transcript.trim();
-    const isFinal = result.isFinal;
+    console.log('Transcripción:', transcript, '| Final:', isFinal, '| Candidatos:', candidates);
     
-    console.log('Transcripción:', transcript, '| Final:', isFinal);
-    
-    // Extraer número de la respuesta
-    const extractedNumber = extractNumberFromText(transcript);
-    
-    // Mostrar lo que se está escuchando
-    if (extractedNumber !== null) {
-        state.capturedResponse = extractedNumber;
-        elements.capturedResponse.textContent = extractedNumber;
+    if (candidates.length > 0) {
+        const numberToUse = candidates.length === 1
+            ? candidates[0]
+            : (isFinal ? resolveMultipleResponses(candidates) : candidates[0]);
+        if (numberToUse === null || numberToUse === undefined) {
+            elements.capturedResponse.textContent = `"${transcript}"`;
+            return;
+        }
+        state.capturedResponse = numberToUse;
+        elements.capturedResponse.textContent = numberToUse;
         
-        // Si es resultado final y tenemos número, procesar
         if (isFinal && state.timerStarted) {
             stopListening();
-            processResponse(extractedNumber);
+            processResponse(numberToUse);
         }
     } else {
-        // Mostrar transcripción parcial
         elements.capturedResponse.textContent = `"${transcript}"`;
     }
 }
@@ -685,79 +838,8 @@ function handleSpeechEnd() {
  * @returns {number|null} Número extraído o null si no se encuentra
  */
 function extractNumberFromText(text) {
-    // Normalizar texto
-    const normalizedText = text.toLowerCase().trim();
-    
-    // Mapa de palabras a números
-    const wordToNumber = {
-        'cero': 0, 'uno': 1, 'una': 1, 'dos': 2, 'tres': 3, 'cuatro': 4,
-        'cinco': 5, 'seis': 6, 'siete': 7, 'ocho': 8, 'nueve': 9,
-        'diez': 10, 'once': 11, 'doce': 12, 'trece': 13, 'catorce': 14,
-        'quince': 15, 'dieciséis': 16, 'dieciseis': 16, 'diecisiete': 17,
-        'dieciocho': 18, 'diecinueve': 19, 'veinte': 20,
-        'veintiuno': 21, 'veintiuna': 21, 'veintidós': 22, 'veintidos': 22,
-        'veintitrés': 23, 'veintitres': 23, 'veinticuatro': 24,
-        'veinticinco': 25, 'veintiséis': 26, 'veintiseis': 26,
-        'veintisiete': 27, 'veintiocho': 28, 'veintinueve': 29,
-        'treinta': 30, 'cuarenta': 40, 'cincuenta': 50, 'sesenta': 60,
-        'setenta': 70, 'ochenta': 80, 'noventa': 90, 'cien': 100,
-        'ciento': 100, 'doscientos': 200, 'doscientas': 200,
-        'trescientos': 300, 'trescientas': 300, 'cuatrocientos': 400,
-        'cuatrocientas': 400, 'quinientos': 500, 'quinientas': 500,
-        'seiscientos': 600, 'seiscientas': 600, 'setecientos': 700,
-        'setecientas': 700, 'ochocientos': 800, 'ochocientas': 800,
-        'novecientos': 900, 'novecientas': 900, 'mil': 1000
-    };
-    
-    // Intentar encontrar números directamente en el texto
-    const numberMatch = normalizedText.match(/\d+([.,]\d+)?/);
-    if (numberMatch) {
-        return parseFloat(numberMatch[0].replace(',', '.'));
-    }
-    
-    // Buscar palabras numéricas
-    for (const [word, num] of Object.entries(wordToNumber)) {
-        if (normalizedText.includes(word)) {
-            // Manejar números compuestos como "treinta y ocho"
-            const compoundMatch = normalizedText.match(
-                /(treinta|cuarenta|cincuenta|sesenta|setenta|ochenta|noventa)\s*y\s*(uno|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve)/
-            );
-            if (compoundMatch) {
-                const tens = wordToNumber[compoundMatch[1]];
-                const units = wordToNumber[compoundMatch[2]];
-                return tens + units;
-            }
-            
-            // Manejar "ciento X" 
-            const cienMatch = normalizedText.match(/ciento\s+(.*)/);
-            if (cienMatch) {
-                const rest = extractNumberFromText(cienMatch[1]);
-                if (rest !== null && rest < 100) {
-                    return 100 + rest;
-                }
-            }
-            
-            // Manejar miles
-            const milMatch = normalizedText.match(/([\w\s]+)\s*mil\s*([\w\s]*)/);
-            if (milMatch) {
-                let thousands = 1;
-                if (milMatch[1].trim()) {
-                    const thousandPart = extractNumberFromText(milMatch[1]);
-                    if (thousandPart !== null) thousands = thousandPart;
-                }
-                let remainder = 0;
-                if (milMatch[2].trim()) {
-                    const remainderPart = extractNumberFromText(milMatch[2]);
-                    if (remainderPart !== null) remainder = remainderPart;
-                }
-                return thousands * 1000 + remainder;
-            }
-            
-            return num;
-        }
-    }
-    
-    return null;
+    const nums = extractNumbersFromTranscript(text);
+    return nums.length ? nums[0] : null;
 }
 
 // ============================================================================
@@ -836,6 +918,12 @@ function handleTimeout() {
     
     // Registrar resultado
     recordItemResult(state.currentItemId, null, false);
+
+    // Retroalimentación correctiva para ítems de aprendizaje
+    if (state.currentItemId === 1 || state.currentItemId === 2) {
+        const item = ITEMS_DATABASE[state.currentItemId];
+        if (item) provideLearningFeedback(item);
+    }
     
     // Incrementar errores consecutivos
     state.consecutiveErrors++;
@@ -974,6 +1062,11 @@ function processResponse(response) {
         if (state.reverseSequenceActive) {
             state.perfectScoresInReverse = 0;
         }
+
+        // Ítems de aprendizaje (1 y 2) requieren retroalimentación inmediata
+        if (state.currentItemId === 1 || state.currentItemId === 2) {
+            provideLearningFeedback(item);
+        }
     }
     
     // Registrar resultado
@@ -1008,18 +1101,49 @@ function validateResponse(response, item) {
 }
 
 /**
+ * Retroalimentación correctiva para ítems de aprendizaje (1 y 2).
+ * @param {Object} item
+ */
+function provideLearningFeedback(item) {
+    const message = `La respuesta correcta es ${item.answer}.`; // mensaje breve y claro
+    showFeedback('incorrect', `✗ Incorrecto - ${message}`);
+    speak(message).catch(() => {});
+}
+
+/**
  * Registra el resultado de un ítem
  * @param {string|number} itemId - ID del ítem
  * @param {number|null} response - Respuesta dada
  * @param {boolean} correct - Si fue correcta
  */
-function recordItemResult(itemId, response, correct) {
+function recordItemResult(itemId, response, correct, options = {}) {
     state.itemsAdministered.push({
         itemId,
         response,
         correct,
+        credited: options.credited || false,
         timestamp: new Date()
     });
+}
+
+/**
+ * Aplica crédito automático a ítems 1-5 cuando 6 y 7 fueron correctos en primera administración.
+ */
+function applyAutoCreditIfEligible() {
+    if (state.autoCreditApplied) return;
+    const item6 = state.itemsAdministered.find(r => r.itemId === 6);
+    const item7 = state.itemsAdministered.find(r => r.itemId === 7);
+    if (!item6 || !item7) return;
+    if (state.reverseSequenceNeeded) return; // hubo error en 6/7, no corresponde crédito automático
+    if (item6.correct && item7.correct) {
+        state.autoCreditApplied = true;
+        for (let i = 1; i <= 5; i++) {
+            recordItemResult(i, null, true, { credited: true });
+        }
+        state.score += 5;
+        const elements = getDOMElements();
+        elements.scoreDisplay.textContent = state.score;
+    }
 }
 
 /**
@@ -1047,6 +1171,11 @@ function checkAndProceed() {
         // Si falló ítem 6 o 7, activar secuencia inversa
         if ((currentId === 6 || currentId === 7) && !lastResult.correct) {
             state.reverseSequenceNeeded = true;
+        }
+        
+        // Si completó ítem 7 sin activar reversa, aplicar crédito automático 1-5
+        if (currentId === 7 && !state.reverseSequenceNeeded) {
+            applyAutoCreditIfEligible();
         }
         
         // Si terminó ítem 7 y necesita reversa, iniciar secuencia inversa
@@ -1118,7 +1247,7 @@ function endTest() {
     let logHTML = '';
     for (const record of state.itemsAdministered) {
         const itemLabel = record.itemId === 'practice' ? 'Práctica' : `Ítem ${record.itemId}`;
-        const responseText = record.response !== null ? record.response : 'Sin respuesta';
+        const responseText = record.credited ? 'Crédito automático' : (record.response !== null ? record.response : 'Sin respuesta');
         const statusClass = record.correct ? 'correct' : 'incorrect';
         const statusText = record.correct ? '✓' : '✗';
         
@@ -1154,6 +1283,7 @@ function resetState() {
     state.reverseSequenceNeeded = false;
     state.perfectScoresInReverse = 0;
     state.capturedResponse = null;
+    state.autoCreditApplied = false;
     
     const elements = getDOMElements();
     elements.scoreDisplay.textContent = '0';
