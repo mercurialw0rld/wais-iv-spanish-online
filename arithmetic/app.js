@@ -362,7 +362,8 @@ const CONFIG = {
     STANDARD_START_ITEM: 6,
     TTS_LANG: 'es-ES',
     TTS_RATE: 0.9,
-    STT_LANG: 'es-ES'
+    STT_LANG: 'es-ES',
+    RESPONSE_DEBOUNCE_MS: 1500      // Tiempo de espera antes de procesar respuesta final
 };
 
 // ============================================================================
@@ -388,7 +389,9 @@ const state = {
     perfectScoresInReverse: 0,      // Puntajes perfectos consecutivos en reversa
     capturedResponse: null,         // Respuesta capturada por STT
     userAge: 25,                    // Edad del usuario en años
-    autoCreditApplied: false        // Si ya se otorgó crédito automático de ítems 1-5
+    autoCreditApplied: false,       // Si ya se otorgó crédito automático de ítems 1-5
+    pendingResponseTimeout: null,   // Timeout para procesar respuesta con debounce
+    lastFinalTranscript: ''         // Última transcripción final para evitar duplicados
 };
 
 // ============================================================================
@@ -757,24 +760,48 @@ function handleSpeechResult(event) {
     
     console.log('Transcripción:', transcript, '| Final:', isFinal, '| Candidatos:', candidates);
     
+    // Mostrar siempre lo que se está escuchando
     if (candidates.length > 0) {
-        // Solo preguntar por múltiples respuestas cuando es resultado final
-        const numberToUse = candidates.length === 1
-            ? candidates[0]
-            : (isFinal ? resolveMultipleResponses(candidates) : candidates[0]);
-        if (numberToUse === null || numberToUse === undefined) {
-            elements.capturedResponse.textContent = `"${transcript}"`;
-            return;
-        }
-        state.capturedResponse = numberToUse;
-        elements.capturedResponse.textContent = numberToUse;
-        
-        if (isFinal && state.timerStarted) {
-            stopListening();
-            processResponse(numberToUse);
-        }
+        state.capturedResponse = candidates[0];
+        elements.capturedResponse.textContent = candidates.length > 1 
+            ? `${candidates[0]} (¿o ${candidates[1]}?)` 
+            : candidates[0];
     } else {
         elements.capturedResponse.textContent = `"${transcript}"`;
+    }
+    
+    // Solo procesar cuando es resultado final y hay candidatos
+    if (isFinal && candidates.length > 0 && state.timerStarted) {
+        // Evitar procesar la misma transcripción dos veces
+        if (transcript === state.lastFinalTranscript) {
+            console.log('Transcripción duplicada ignorada');
+            return;
+        }
+        state.lastFinalTranscript = transcript;
+        
+        // Cancelar timeout anterior si existe
+        if (state.pendingResponseTimeout) {
+            clearTimeout(state.pendingResponseTimeout);
+        }
+        
+        // Usar debounce para dar tiempo al usuario a corregirse
+        state.pendingResponseTimeout = setTimeout(() => {
+            if (!state.timerStarted || state.testEnded) return;
+            
+            // Obtener los candidatos más recientes
+            const finalCandidates = extractNumbersFromTranscript(state.lastFinalTranscript);
+            if (finalCandidates.length === 0) return;
+            
+            // Si hay múltiples respuestas, preguntar
+            const numberToUse = finalCandidates.length === 1
+                ? finalCandidates[0]
+                : resolveMultipleResponses(finalCandidates);
+            
+            if (numberToUse !== null && numberToUse !== undefined) {
+                stopListening();
+                processResponse(numberToUse);
+            }
+        }, CONFIG.RESPONSE_DEBOUNCE_MS);
     }
 }
 
@@ -887,6 +914,10 @@ function stopTimer() {
         clearInterval(state.timerInterval);
         state.timerInterval = null;
     }
+    if (state.pendingResponseTimeout) {
+        clearTimeout(state.pendingResponseTimeout);
+        state.pendingResponseTimeout = null;
+    }
     state.timerStarted = false;
 }
 
@@ -985,6 +1016,11 @@ async function administerItem(itemId) {
     state.currentItemId = itemId;
     state.hasRepeated = false;
     state.capturedResponse = null;
+    state.lastFinalTranscript = '';
+    if (state.pendingResponseTimeout) {
+        clearTimeout(state.pendingResponseTimeout);
+        state.pendingResponseTimeout = null;
+    }
     
     const elements = getDOMElements();
     
@@ -1288,6 +1324,8 @@ function resetState() {
     state.perfectScoresInReverse = 0;
     state.capturedResponse = null;
     state.autoCreditApplied = false;
+    state.pendingResponseTimeout = null;
+    state.lastFinalTranscript = '';
     
     const elements = getDOMElements();
     elements.scoreDisplay.textContent = '0';
