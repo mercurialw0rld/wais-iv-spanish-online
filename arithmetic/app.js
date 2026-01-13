@@ -1075,7 +1075,16 @@ function processResponse(response) {
     stopListening();
     
     const item = ITEMS_DATABASE[state.currentItemId];
+    
+    // Debug: mostrar exactamente qué se está comparando
+    console.log('=== PROCESANDO RESPUESTA ===');
+    console.log('Ítem actual:', state.currentItemId);
+    console.log('Respuesta del usuario:', response, '| Tipo:', typeof response);
+    console.log('Respuesta esperada:', item.answer, '| Tipo:', typeof item.answer);
+    console.log('Diferencia:', Math.abs(response - item.answer));
+    
     const isCorrect = validateResponse(response, item);
+    console.log('¿Es correcta?:', isCorrect);
     
     const elements = getDOMElements();
     
@@ -1124,18 +1133,25 @@ function processResponse(response) {
  * @returns {boolean} True si la respuesta es correcta
  */
 function validateResponse(response, item) {
+    console.log('=== VALIDANDO ===');
+    console.log('response:', response, 'item.answer:', item.answer);
+    console.log('Math.abs(response - item.answer):', Math.abs(response - item.answer));
+    
     // Comparar con respuesta principal
     if (Math.abs(response - item.answer) < 0.1) {
+        console.log('✓ Coincide con respuesta principal');
         return true;
     }
     
     // Comparar con respuestas alternativas
     for (const alt of item.alternativeAnswers) {
         if (Math.abs(response - alt) < 0.1) {
+            console.log('✓ Coincide con respuesta alternativa:', alt);
             return true;
         }
     }
     
+    console.log('✗ No coincide con ninguna respuesta');
     return false;
 }
 
