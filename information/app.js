@@ -209,7 +209,6 @@ const BAREMOS = {
  * Estado global de la aplicación
  */
 const state = {
-    apiKey: localStorage.getItem('gemini_api_key') || '',
     userAge: null,
     currentItemIndex: 0,
     scores: [], // Array de {itemId, score, administered}
@@ -240,8 +239,6 @@ const elements = {
     configSection: document.getElementById('config-section'),
     testSection: document.getElementById('test-section'),
     resultsSection: document.getElementById('results-section'),
-    apiKeyInput: document.getElementById('api-key-input'),
-    saveApiKeyBtn: document.getElementById('save-api-key'),
     startBtn: document.getElementById('start-btn'),
     recordBtn: document.getElementById('record-btn'),
     ageInput: document.getElementById('age-input'),
@@ -287,12 +284,6 @@ document.addEventListener('DOMContentLoaded', () => {
  * - Inicializa reconocimiento de voz
  */
 function initializeApp() {
-    // Cargar API key guardada
-    if (state.apiKey) {
-        elements.apiKeyInput.value = state.apiKey;
-        updateApiStatus(true);
-    }
-
     // Cargar edad guardada
     const savedAge = localStorage.getItem('user_age');
     if (savedAge) {
@@ -328,12 +319,6 @@ function initializeScores() {
  * Configura todos los event listeners de la aplicación
  */
 function setupEventListeners() {
-    // Guardar API key
-    elements.saveApiKeyBtn.addEventListener('click', saveApiKey);
-    elements.apiKeyInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') saveApiKey();
-    });
-
     // Input de edad
     elements.ageInput.addEventListener('input', handleAgeInput);
 
@@ -354,19 +339,6 @@ function setupEventListeners() {
 }
 
 /**
- * Guarda la API key en localStorage
- */
-function saveApiKey() {
-    const apiKey = elements.apiKeyInput.value.trim();
-    if (apiKey) {
-        state.apiKey = apiKey;
-        localStorage.setItem('gemini_api_key', apiKey);
-        updateApiStatus(true);
-        checkStartButtonState();
-    }
-}
-
-/**
  * Maneja el input de edad
  */
 function handleAgeInput() {
@@ -384,23 +356,8 @@ function handleAgeInput() {
  * Verifica si el botón de inicio debe estar habilitado
  */
 function checkStartButtonState() {
-    const hasApiKey = state.apiKey && state.apiKey.length > 0;
     const hasValidAge = state.userAge && state.userAge >= 16 && state.userAge <= 90;
-    elements.startBtn.disabled = !(hasApiKey && hasValidAge);
-}
-
-/**
- * Actualiza el estado visual de la API
- * @param {boolean} connected - Si la API está configurada
- */
-function updateApiStatus(connected) {
-    if (connected) {
-        elements.apiStatus.classList.add('connected');
-        elements.apiStatus.querySelector('.status-text').textContent = 'API Key configurada';
-    } else {
-        elements.apiStatus.classList.remove('connected');
-        elements.apiStatus.querySelector('.status-text').textContent = 'API Key no configurada';
-    }
+    elements.startBtn.disabled = !hasValidAge;
 }
 
 // ============================================
@@ -751,17 +708,13 @@ Responde SOLO con un JSON válido:
     "probeQuestion": "Pregunta de sondeo si needsProbe es true (ej: 'Sí, ¿pero cómo se llama?')"
 }`;
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${state.apiKey}`, {
+    const response = await fetch('/api/evaluate', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            contents: [{
-                parts: [{
-                    text: prompt
-                }]
-            }],
+            prompt: prompt,
             generationConfig: {
                 temperature: 0.1,
                 maxOutputTokens: 500
@@ -774,12 +727,10 @@ Responde SOLO con un JSON válido:
     }
 
     const data = await response.json();
-    const textResponse = data.candidates[0].content.parts[0].text;
-
-    // Extraer JSON de la respuesta
-    const jsonMatch = textResponse.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-        return JSON.parse(jsonMatch[0]);
+    
+    // The server already parses the JSON for us
+    if (data.score !== undefined) {
+        return data;
     }
 
     throw new Error('No se pudo parsear la respuesta');

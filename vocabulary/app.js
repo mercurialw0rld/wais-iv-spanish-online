@@ -178,7 +178,6 @@ const BAREMOS = {
  * Estado global de la aplicación
  */
 const state = {
-    apiKey: localStorage.getItem('gemini_api_key') || '',
     userAge: null,
     currentItemIndex: 0,
     scores: [],
@@ -203,8 +202,7 @@ const elements = {
     configSection: document.getElementById('config-section'),
     testSection: document.getElementById('test-section'),
     resultsSection: document.getElementById('results-section'),
-    apiKeyInput: document.getElementById('api-key-input'),
-    saveApiKeyBtn: document.getElementById('save-api-key'),
+    saveConfigBtn: document.getElementById('save-config'),
     startBtn: document.getElementById('start-btn'),
     recordBtn: document.getElementById('record-btn'),
     recordText: document.getElementById('record-text'),
@@ -535,7 +533,7 @@ IMPORTANTE:
  * @returns {Promise<Object>} Resultado de la evaluación
  */
 async function evaluateWithGemini(word, userResponse, isProbeResponse = false) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${state.apiKey}`;
+    const url = '/api/evaluate';
     
     const contextMessage = isProbeResponse 
         ? `El usuario ya dio una respuesta inicial y ahora responde a la consulta adicional.`
@@ -558,16 +556,8 @@ Responde ÚNICAMENTE con el JSON especificado, sin texto adicional.`;
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                contents: [{
-                    parts: [{
-                        text: userPrompt
-                    }]
-                }],
-                systemInstruction: {
-                    parts: [{
-                        text: buildSystemPrompt()
-                    }]
-                },
+                prompt: userPrompt,
+                systemInstruction: buildSystemPrompt(),
                 generationConfig: {
                     temperature: 0.1,
                     topP: 0.8,
@@ -582,11 +572,10 @@ Responde ÚNICAMENTE con el JSON especificado, sin texto adicional.`;
         }
         
         const data = await response.json();
-        const textResponse = data.candidates[0].content.parts[0].text;
         
-        const jsonMatch = textResponse.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-            return JSON.parse(jsonMatch[0]);
+        // The server already parses the JSON for us
+        if (data.score !== undefined) {
+            return data;
         }
         
         throw new Error('No se pudo parsear la respuesta');
@@ -886,30 +875,22 @@ function restartTest() {
 }
 
 // ============================================
-// FUNCIONES DE CONFIGURACIÓN DE API
+// FUNCIONES DE CONFIGURACIÓN
 // ============================================
 
 /**
- * Guarda la API key y la edad, luego muestra la sección del test
+ * Guarda la edad y muestra la sección del test
  */
-function saveApiKey() {
-    const apiKey = elements.apiKeyInput.value.trim();
+function saveConfig() {
     const ageInput = document.getElementById('age-input');
     const age = parseInt(ageInput.value, 10);
-    
-    if (!apiKey) {
-        showStatus('Por favor ingresa una API Key válida', 'error');
-        return;
-    }
     
     if (!age || age < 16 || age > 90) {
         showStatus('Por favor ingresa una edad válida (16-90 años)', 'error');
         return;
     }
     
-    state.apiKey = apiKey;
     state.userAge = age;
-    localStorage.setItem('gemini_api_key', apiKey);
     localStorage.setItem('user_age', age.toString());
     
     toggleElement(elements.configSection, false);
@@ -919,16 +900,16 @@ function saveApiKey() {
 }
 
 /**
- * Verifica si hay una API key y edad guardadas al cargar la página
+ * Verifica si hay una edad guardada al cargar la página
  */
-function checkStoredApiKey() {
+function checkStoredConfig() {
     const storedAge = localStorage.getItem('user_age');
     if (storedAge) {
         state.userAge = parseInt(storedAge, 10);
         document.getElementById('age-input').value = storedAge;
     }
     
-    if (state.apiKey && state.userAge) {
+    if (state.userAge) {
         toggleElement(elements.configSection, false);
         toggleElement(elements.testSection, true);
     }
@@ -942,9 +923,9 @@ function checkStoredApiKey() {
  * Inicializa todos los event listeners de la aplicación
  */
 function initializeEventListeners() {
-    elements.saveApiKeyBtn.addEventListener('click', saveApiKey);
-    elements.apiKeyInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') saveApiKey();
+    elements.saveConfigBtn.addEventListener('click', saveConfig);
+    document.getElementById('age-input').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') saveConfig();
     });
     
     elements.startBtn.addEventListener('click', startTest);
@@ -972,7 +953,7 @@ function initializeEventListeners() {
 function init() {
     console.log('WAIS-V Vocabulario - Inicializando...');
     
-    checkStoredApiKey();
+    checkStoredConfig();
     initializeEventListeners();
     state.synthesis.getVoices();
     
