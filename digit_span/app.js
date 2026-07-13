@@ -40,16 +40,108 @@ const CONFIG = {
     
     /** Longitud de secuencias por ítem (ítem 1 = 2 dígitos, ítem 8 = 9 dígitos) */
     SEQUENCE_LENGTHS: {
+
+    /**
+     * Convierte la respuesta hablada final en una secuencia limpia de dígitos usando Gemini.
+     * Si la API falla, cae al extractor local como respaldo.
+     *
+     * @param {string} transcript - Transcripción final capturada por STT
+     * @returns {Promise<number[]>} Dígitos normalizados
+     */
+    async function parseTranscriptWithGemini(transcript) {
+        const cleanedTranscript = normalizeTranscript(transcript);
+
+        if (!cleanedTranscript) {
+            return [];
+        }
+
+        try {
+            const response = await fetch('/api/evaluate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    systemInstruction: [
+                        'Eres un extractor estricto de respuestas para la prueba WAIS Retención de Dígitos.',
+                        'Convierte el texto hablado en una secuencia de dígitos en orden exacto.',
+                        'Elimina muletillas, repeticiones, pausas, conectores y ruido.',
+                        'Devuelve solo JSON válido con la forma {"digits":[1,2,3],"normalizedText":"1 2 3"}.',
+                        'Si no puedes identificar ningún dígito, devuelve {"digits":[],"normalizedText":""}.'
+                    ].join(' '),
+                    prompt: `Transcripción a normalizar: ${cleanedTranscript}`,
+                    generationConfig: {
+                        temperature: 0,
+                        topP: 0.1,
+                        topK: 1,
+                        maxOutputTokens: 120
+                    }
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                const digits = coerceDigitsFromParserResult(data);
+
+                if (digits.length > 0) {
+                    logDebug(`Gemini normalizó: [${digits.join(', ')}]`, 'success');
+                    return digits;
+                }
+            }
+        } catch (error) {
+            logDebug(`Gemini no disponible para normalizar: ${error.message}`, 'error');
+        }
+
+        const fallbackDigits = extractDigitsFromText(cleanedTranscript);
+        logDebug(`Fallback local: [${fallbackDigits.join(', ')}]`, 'info');
+        return fallbackDigits;
+    }
+
+    /**
+     * Extrae dígitos desde la respuesta devuelta por el proxy Gemini.
+     *
+     * @param {any} data - Respuesta JSON del proxy
+     * @returns {number[]}
+     */
+    function coerceDigitsFromParserResult(data) {
+        if (!data) {
+            return [];
+        }
+
+        if (Array.isArray(data.digits)) {
+            return data.digits
+                .map((digit) => Number.parseInt(digit, 10))
+                .filter((digit) => Number.isInteger(digit) && digit >= 0 && digit <= 9);
+        }
+
+        const rawText = typeof data.rawText === 'string' ? data.rawText : '';
+        if (!rawText) {
+            return [];
+        }
+
+        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            try {
+                const parsed = JSON.parse(jsonMatch[0]);
+                return coerceDigitsFromParserResult(parsed);
+            } catch (error) {
+                // Ignorar y usar el texto crudo como respaldo
+            }
+        }
+
+        const digits = rawText.match(/\d/g);
+        return digits ? digits.map((digit) => Number.parseInt(digit, 10)) : [];
+    }
         DOD: [2, 3, 4, 5, 6, 7, 8, 9],  // 8 ítems, longitud 2-9
         DOI: [2, 3, 4, 5, 6, 7, 8],      // 8 ítems, longitud 2-8
         DS:  [2, 3, 4, 5, 6, 7, 8, 9]    // 8 ítems, longitud 2-9
-    },
+     * El micrófono queda activo hasta que el usuario presiona Stop.
     
     /** Puntuación máxima por modalidad */
     MAX_SCORES: {
         DOD: 16,
         DOI: 16,
-        DS: 16,
+            // Crear nueva instancia para evitar problemas de estado en móviles
         TOTAL: 48
     }
 };
@@ -58,16 +150,17 @@ const CONFIG = {
 // BAREMOS - TABLAS DE CONVERSIÓN RAW SCORE A PE
 // =====================================================
 
-/**
  * Baremos para convertir puntaje bruto total a Puntaje Escalar (PE)
  * Organizados por grupo de edad
+            let isStopping = false;
+            let stopRequested = false;
  * Formato: { minAge, maxAge, label, ranges: [[minRaw, maxRaw, PE], ...] }
  */
 const BAREMOS = [
     {
-        minAge: 16, maxAge: 17,
         label: "16:0 a 17:11 años",
         ranges: [
+                elements.btnListen.innerHTML = '<span class="icon">🎤</span> Responder';
             [0, 10, 1], [11, 11, 2], [12, 12, 3], [13, 13, 4], [14, 15, 5],
             [16, 17, 6], [18, 18, 7], [19, 20, 8], [21, 22, 9], [23, 24, 10],
             [25, 26, 11], [27, 28, 12], [29, 30, 13], [31, 33, 14], [34, 35, 15],
@@ -75,51 +168,59 @@ const BAREMOS = [
         ]
     },
     {
-        minAge: 18, maxAge: 19,
-        label: "18:0 a 19:11 años",
-        ranges: [
-            [0, 11, 1], [12, 12, 2], [13, 14, 3], [15, 15, 4], [16, 17, 5],
-            [18, 18, 6], [19, 19, 7], [20, 21, 8], [22, 23, 9], [24, 25, 10],
-            [26, 27, 11], [28, 29, 12], [30, 31, 13], [32, 33, 14], [34, 36, 15],
-            [37, 38, 16], [39, 40, 17], [41, 43, 18], [44, 48, 19]
-        ]
-    },
-    {
-        minAge: 20, maxAge: 24,
-        label: "20:0 a 24:11 años (Referencia)",
-        ranges: [
-            [0, 11, 1], [12, 12, 2], [13, 14, 3], [15, 15, 4], [16, 17, 5],
-            [18, 18, 6], [19, 20, 7], [21, 22, 8], [23, 24, 9], [25, 26, 10],
-            [27, 28, 11], [29, 30, 12], [31, 32, 13], [33, 34, 14], [35, 36, 15],
-            [37, 38, 16], [39, 40, 17], [41, 43, 18], [44, 48, 19]
-        ]
-    },
-    {
-        minAge: 25, maxAge: 29,
-        label: "25:0 a 29:11 años",
-        ranges: [
-            [0, 10, 1], [11, 11, 2], [12, 12, 3], [13, 13, 4], [14, 15, 5],
-            [16, 17, 6], [18, 18, 7], [19, 20, 8], [21, 22, 9], [23, 24, 10],
-            [25, 26, 11], [27, 28, 12], [29, 30, 13], [31, 33, 14], [34, 35, 15],
+
+            const finalizeTranscript = async () => {
+                const transcript = lastTranscript.trim();
+                if (!transcript) {
+                    return '';
+                }
+
+                const digits = await parseTranscriptWithGemini(transcript);
+                return digits.length > 0 ? digits.join(' ') : '';
+            };
+
+            const stopAndResolve = async () => {
+                if (hasResolved || isStopping) return;
+                isStopping = true;
+
+                try {
+                    recognition.stop();
+                } catch (error) {
+                    // Ignorar si ya estaba detenido
+                }
+
+                try {
+                    const normalizedResponse = await finalizeTranscript();
+                    hasResolved = true;
+                    cleanup();
+                    resolve(normalizedResponse);
+                } catch (error) {
+                    hasResolved = true;
+                    cleanup();
+                    reject(error);
+                }
+            };
             [36, 37, 16], [38, 39, 17], [40, 42, 18], [43, 48, 19]
         ]
     },
-    {
+            elements.micStatus.querySelector('span').textContent = 'Escuchando... habla cuando quieras';
+            elements.btnListen.innerHTML = '<span class="icon">⏹</span> Stop';
         minAge: 30, maxAge: 34,
         label: "30:0 a 34:11 años",
-        ranges: [
+                if (hasResolved || !state.awaitingResponse) return; // Evitar duplicados o cancelación por teclado
             [0, 9, 1], [10, 10, 2], [11, 11, 3], [12, 13, 4], [14, 14, 5],
             [15, 16, 6], [17, 18, 7], [19, 19, 8], [20, 21, 9], [22, 23, 10],
             [24, 25, 11], [26, 27, 12], [28, 30, 13], [31, 32, 14], [33, 34, 15],
             [35, 36, 16], [37, 38, 17], [39, 41, 18], [42, 48, 19]
         ]
     },
-    {
-        minAge: 35, maxAge: 44,
+                lastTranscript = transcript;
+                elements.micStatus.querySelector('span').textContent = 'Escuchando... pulsa Stop cuando termines';
+                elements.userResponse.textContent = `Tu respuesta: ${transcript}`;
         label: "35:0 a 44:11 años",
         ranges: [
             [0, 9, 1], [10, 10, 2], [11, 11, 3], [12, 13, 4], [14, 14, 5],
-            [15, 16, 6], [17, 17, 7], [18, 19, 8], [20, 21, 9], [22, 23, 10],
+                if (hasResolved || !state.awaitingResponse) return;
             [24, 25, 11], [26, 27, 12], [28, 30, 13], [31, 32, 14], [33, 34, 15],
             [35, 36, 16], [37, 38, 17], [39, 40, 18], [41, 48, 19]
         ]
@@ -132,7 +233,7 @@ const BAREMOS = [
             [13, 14, 6], [15, 16, 7], [17, 17, 8], [18, 19, 9], [20, 21, 10],
             [22, 23, 11], [24, 25, 12], [26, 27, 13], [28, 30, 14], [31, 32, 15],
             [33, 34, 16], [35, 36, 17], [37, 38, 18], [39, 48, 19]
-        ]
+                            if (!hasResolved && !stopRequested) {
     },
     {
         minAge: 55, maxAge: 64,
@@ -657,11 +758,11 @@ function listenForResponse() {
         };
         
         recognition.onend = () => {
-            if (!hasResolved && state.awaitingResponse) {
+            if (!hasResolved && state.awaitingResponse && !stopRequested) {
                 // Si terminó sin resultado, reintentar
                 elements.micStatus.querySelector('span').textContent = 'Reintentando...';
                 setTimeout(() => {
-                    if (!hasResolved && state.awaitingResponse) {
+                    if (!hasResolved && state.awaitingResponse && !stopRequested) {
                         try {
                             recognition = createRecognitionInstance();
                             if (recognition) {
@@ -682,7 +783,9 @@ function listenForResponse() {
                 if (hasResolved || !state.awaitingResponse) return;
                 const { transcript } = selectBestTranscript(event);
                 logDebug(`STT parcial (reinicio): "${transcript}"`, 'info');
-                resolveWithDebounce(transcript);
+                lastTranscript = transcript;
+                elements.micStatus.querySelector('span').textContent = 'Escuchando... pulsa Stop cuando termines';
+                elements.userResponse.textContent = `Tu respuesta: ${transcript}`;
             };
             
             recognition.onerror = (event) => {
@@ -694,7 +797,22 @@ function listenForResponse() {
             };
             
             recognition.onend = () => {
-                // No hacer nada, el timeout manejará si no hay respuesta
+                if (!hasResolved && state.awaitingResponse && !stopRequested) {
+                    elements.micStatus.querySelector('span').textContent = 'Reconectando micrófono...';
+                    setTimeout(() => {
+                        if (!hasResolved && state.awaitingResponse && !stopRequested) {
+                            try {
+                                recognition = createRecognitionInstance();
+                                if (recognition) {
+                                    setupRecognitionHandlers();
+                                    recognition.start();
+                                }
+                            } catch (error) {
+                                logDebug('Error al reiniciar STT', 'error');
+                            }
+                        }
+                    }, 200);
+                }
             };
         };
         
@@ -717,6 +835,8 @@ function listenForResponse() {
             cleanup();
             reject(e);
         }
+
+        elements.btnListen.addEventListener('click', stopAndResolve, { once: true });
     });
 }
 
@@ -1078,7 +1198,7 @@ async function runAttempt(mode, length) {
     elements.btnSkip.disabled = false;
     state.awaitingResponse = true;
     
-    showFeedback('Ahora es tu turno. Presiona "Responder", habla o escribe los dígitos y pulsa Enter.', 'info');
+    showFeedback('Ahora es tu turno. El micrófono ya está activo: habla y pulsa Stop cuando termines, o escribe los dígitos y pulsa Enter.', 'info');
     
     try {
         const response = await captureUserResponse();
@@ -1118,6 +1238,7 @@ function captureUserResponse() {
         let resolved = false;
         let keyboardBuffer = '';
         let recognitionStoppedByKeyboard = false;
+        const responsePromise = listenForResponse();
 
         const updateKeyboardDisplay = () => {
             elements.userResponse.textContent = keyboardBuffer
@@ -1145,6 +1266,20 @@ function captureUserResponse() {
             cleanup();
             resolve(keyboardBuffer.trim());
         };
+
+        responsePromise.then((response) => {
+            if (resolved) return;
+
+            resolved = true;
+            cleanup();
+            resolve(response);
+        }).catch((error) => {
+            if (resolved) return;
+
+            resolved = true;
+            cleanup();
+            reject(error);
+        });
 
         const handleKeydown = (event) => {
             if (resolved || !state.awaitingResponse) return;
@@ -1188,28 +1323,12 @@ function captureUserResponse() {
             updateKeyboardDisplay();
         };
         
-        // Handler para el botón de responder (activa STT)
-        const handleListen = async () => {
-            if (resolved) return;
-            
-            try {
-                const response = await listenForResponse();
-                resolved = true;
-                cleanup();
-                resolve(response);
-            } catch (error) {
-                if (!resolved) {
-                    resolved = true;
-                    cleanup();
-                    reject(error);
-                }
-            }
-        };
-        
         // Handler para saltar (sin respuesta)
         const handleSkip = () => {
             if (resolved) return;
             resolved = true;
+            state.awaitingResponse = false;
+            stopRecognitionIfNeeded();
             cleanup();
             resolve(''); // Respuesta vacía = incorrecto
         };
@@ -1226,12 +1345,10 @@ function captureUserResponse() {
         // Cleanup function
         const cleanup = () => {
             clearTimeout(timeoutId);
-            elements.btnListen.removeEventListener('click', handleListen);
             elements.btnSkip.removeEventListener('click', handleSkip);
             document.removeEventListener('keydown', handleKeydown);
         };
         
-        elements.btnListen.addEventListener('click', handleListen);
         elements.btnSkip.addEventListener('click', handleSkip);
         document.addEventListener('keydown', handleKeydown);
         updateKeyboardDisplay();
@@ -1404,7 +1521,7 @@ function confirmAge() {
     elements.ageForm.style.display = 'none';
     elements.btnStart.style.display = 'inline-flex';
     
-    elements.instructionsText.textContent = `Edad: ${age} años. Presiona "Iniciar Test" para comenzar. También puedes responder por voz o escribiendo los dígitos y pulsando Enter.`;
+    elements.instructionsText.textContent = `Edad: ${age} años. Presiona "Iniciar Test" para comenzar. Después de cada secuencia, el micrófono se activará automáticamente hasta que pulses Stop. También puedes escribir los dígitos y pulsar Enter.`;
 }
 
 /**
