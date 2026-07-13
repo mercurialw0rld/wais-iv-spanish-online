@@ -388,6 +388,7 @@ const state = {
     reverseSequenceNeeded: false,   // Si se necesita secuencia inversa
     perfectScoresInReverse: 0,      // Puntajes perfectos consecutivos en reversa
     capturedResponse: null,         // Respuesta capturada por STT
+    keyboardResponse: '',           // Respuesta capturada por teclado
     userAge: 25,                    // Edad del usuario en años
     autoCreditApplied: false,       // Si ya se otorgó crédito automático de ítems 1-5
     pendingResponseTimeout: null,   // Timeout para procesar respuesta con debounce
@@ -872,6 +873,96 @@ function extractNumberFromText(text) {
     return nums.length ? nums[0] : null;
 }
 
+function updateKeyboardResponseDisplay() {
+    const elements = getDOMElements();
+    elements.capturedResponse.textContent = state.keyboardResponse || '--';
+}
+
+function clearKeyboardResponse() {
+    state.keyboardResponse = '';
+    updateKeyboardResponseDisplay();
+}
+
+function submitKeyboardResponse() {
+    const normalized = state.keyboardResponse.replace(',', '.').trim();
+
+    if (!normalized) {
+        return;
+    }
+
+    const response = Number(normalized);
+    if (Number.isNaN(response)) {
+        updateStatusIndicator('waiting', 'Escribe solo números');
+        return;
+    }
+
+    if (state.pendingResponseTimeout) {
+        clearTimeout(state.pendingResponseTimeout);
+        state.pendingResponseTimeout = null;
+    }
+
+    state.lastFinalTranscript = '';
+    state.keyboardResponse = '';
+    stopListening();
+    processResponse(response);
+}
+
+function handleKeyboardResponseKeydown(event) {
+    if (!state.timerStarted || state.testEnded) {
+        return;
+    }
+
+    const target = event.target;
+    if (target && target instanceof HTMLElement) {
+        const tagName = target.tagName;
+        if (tagName === 'INPUT' || tagName === 'TEXTAREA' || target.isContentEditable) {
+            return;
+        }
+    }
+
+    const key = event.key;
+
+    if (key === 'Enter') {
+        event.preventDefault();
+        submitKeyboardResponse();
+        return;
+    }
+
+    if (key === 'Backspace') {
+        event.preventDefault();
+        state.keyboardResponse = state.keyboardResponse.slice(0, -1);
+        updateKeyboardResponseDisplay();
+        return;
+    }
+
+    if (key === 'Escape') {
+        event.preventDefault();
+        clearKeyboardResponse();
+        return;
+    }
+
+    const normalizedKey = key === ',' ? '.' : key;
+    const isDigit = /^[0-9]$/.test(normalizedKey);
+    const isDecimal = normalizedKey === '.';
+
+    if (!isDigit && !isDecimal) {
+        return;
+    }
+
+    event.preventDefault();
+
+    if (state.isListening) {
+        stopListening();
+    }
+
+    if (isDecimal && state.keyboardResponse.includes('.')) {
+        return;
+    }
+
+    state.keyboardResponse += normalizedKey;
+    updateKeyboardResponseDisplay();
+}
+
 // ============================================================================
 // FUNCIONES DE TIMER
 // ============================================================================
@@ -884,10 +975,12 @@ function startTimer() {
     
     state.timerStarted = true;
     state.timeRemaining = CONFIG.TIME_LIMIT_SECONDS;
+    state.keyboardResponse = '';
     
     const elements = getDOMElements();
     elements.btnMic.disabled = false;
     elements.btnRepeat.disabled = state.hasRepeated;
+    updateKeyboardResponseDisplay();
     
     updateTimerDisplay();
     
@@ -919,6 +1012,7 @@ function stopTimer() {
         state.pendingResponseTimeout = null;
     }
     state.timerStarted = false;
+    clearKeyboardResponse();
 }
 
 /**
@@ -1016,6 +1110,7 @@ async function administerItem(itemId) {
     state.currentItemId = itemId;
     state.hasRepeated = false;
     state.capturedResponse = null;
+    state.keyboardResponse = '';
     state.lastFinalTranscript = '';
     if (state.pendingResponseTimeout) {
         clearTimeout(state.pendingResponseTimeout);
@@ -1427,6 +1522,7 @@ function init() {
     elements.btnStart.addEventListener('click', startEvaluation);
     
     elements.btnRepeat.addEventListener('click', repeatCurrentItem);
+    document.addEventListener('keydown', handleKeyboardResponseKeydown);
     
     elements.btnMic.addEventListener('click', () => {
         if (state.isListening) {

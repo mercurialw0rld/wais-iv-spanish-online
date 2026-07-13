@@ -609,7 +609,7 @@ function listenForResponse() {
         elements.micStatus.querySelector('span').textContent = 'Escuchando... Habla ahora';
         
         recognition.onresult = (event) => {
-            if (hasResolved) return; // Evitar duplicados
+            if (hasResolved || !state.awaitingResponse) return; // Evitar duplicados o cancelación por teclado
             
             const { transcript } = selectBestTranscript(event);
             const isFinal = event.results[event.results.length - 1].isFinal;
@@ -621,7 +621,7 @@ function listenForResponse() {
         };
         
         recognition.onerror = (event) => {
-            if (hasResolved) return;
+            if (hasResolved || !state.awaitingResponse) return;
             
             logDebug(`STT error: ${event.error}`, 'error');
             
@@ -657,11 +657,11 @@ function listenForResponse() {
         };
         
         recognition.onend = () => {
-            if (!hasResolved) {
+            if (!hasResolved && state.awaitingResponse) {
                 // Si terminó sin resultado, reintentar
                 elements.micStatus.querySelector('span').textContent = 'Reintentando...';
                 setTimeout(() => {
-                    if (!hasResolved) {
+                    if (!hasResolved && state.awaitingResponse) {
                         try {
                             recognition = createRecognitionInstance();
                             if (recognition) {
@@ -679,14 +679,14 @@ function listenForResponse() {
         // Función para configurar handlers (para reinicios)
         const setupRecognitionHandlers = () => {
             recognition.onresult = (event) => {
-                if (hasResolved) return;
+                if (hasResolved || !state.awaitingResponse) return;
                 const { transcript } = selectBestTranscript(event);
                 logDebug(`STT parcial (reinicio): "${transcript}"`, 'info');
                 resolveWithDebounce(transcript);
             };
             
             recognition.onerror = (event) => {
-                if (hasResolved) return;
+                if (hasResolved || !state.awaitingResponse) return;
                 if (event.error === 'no-speech' || event.error === 'aborted') return;
                 hasResolved = true;
                 cleanup();
@@ -1078,7 +1078,7 @@ async function runAttempt(mode, length) {
     elements.btnSkip.disabled = false;
     state.awaitingResponse = true;
     
-    showFeedback('Ahora es tu turno. Presiona "Responder" o habla.', 'info');
+    showFeedback('Ahora es tu turno. Presiona "Responder", habla o escribe los dígitos y pulsa Enter.', 'info');
     
     try {
         const response = await captureUserResponse();
@@ -1116,6 +1116,77 @@ async function runAttempt(mode, length) {
 function captureUserResponse() {
     return new Promise((resolve, reject) => {
         let resolved = false;
+        let keyboardBuffer = '';
+        let recognitionStoppedByKeyboard = false;
+
+        const updateKeyboardDisplay = () => {
+            elements.userResponse.textContent = keyboardBuffer
+                ? `Tu respuesta: ${keyboardBuffer}`
+                : 'Tu respuesta: --';
+        };
+
+        const stopRecognitionIfNeeded = () => {
+            if (recognition && !recognitionStoppedByKeyboard) {
+                recognitionStoppedByKeyboard = true;
+                try {
+                    recognition.stop();
+                } catch (error) {
+                    // Ignorar si ya estaba detenido
+                }
+            }
+        };
+
+        const submitKeyboardResponse = () => {
+            if (resolved || keyboardBuffer.trim() === '') return;
+
+            resolved = true;
+            state.awaitingResponse = false;
+            stopRecognitionIfNeeded();
+            cleanup();
+            resolve(keyboardBuffer.trim());
+        };
+
+        const handleKeydown = (event) => {
+            if (resolved || !state.awaitingResponse) return;
+
+            const target = event.target;
+            if (target && target instanceof HTMLElement) {
+                const tagName = target.tagName;
+                if (tagName === 'INPUT' || tagName === 'TEXTAREA' || target.isContentEditable) {
+                    return;
+                }
+            }
+
+            const key = event.key;
+
+            if (key === 'Enter') {
+                event.preventDefault();
+                submitKeyboardResponse();
+                return;
+            }
+
+            if (key === 'Backspace') {
+                event.preventDefault();
+                keyboardBuffer = keyboardBuffer.slice(0, -1);
+                updateKeyboardDisplay();
+                return;
+            }
+
+            if (key === 'Escape') {
+                event.preventDefault();
+                keyboardBuffer = '';
+                updateKeyboardDisplay();
+                return;
+            }
+
+            if (!/^[0-9]$/.test(key)) {
+                return;
+            }
+
+            event.preventDefault();
+            keyboardBuffer += key;
+            updateKeyboardDisplay();
+        };
         
         // Handler para el botón de responder (activa STT)
         const handleListen = async () => {
@@ -1157,10 +1228,13 @@ function captureUserResponse() {
             clearTimeout(timeoutId);
             elements.btnListen.removeEventListener('click', handleListen);
             elements.btnSkip.removeEventListener('click', handleSkip);
+            document.removeEventListener('keydown', handleKeydown);
         };
         
         elements.btnListen.addEventListener('click', handleListen);
         elements.btnSkip.addEventListener('click', handleSkip);
+        document.addEventListener('keydown', handleKeydown);
+        updateKeyboardDisplay();
     });
 }
 
@@ -1330,7 +1404,7 @@ function confirmAge() {
     elements.ageForm.style.display = 'none';
     elements.btnStart.style.display = 'inline-flex';
     
-    elements.instructionsText.textContent = `Edad: ${age} años. Presiona "Iniciar Test" para comenzar.`;
+    elements.instructionsText.textContent = `Edad: ${age} años. Presiona "Iniciar Test" para comenzar. También puedes responder por voz o escribiendo los dígitos y pulsando Enter.`;
 }
 
 /**
